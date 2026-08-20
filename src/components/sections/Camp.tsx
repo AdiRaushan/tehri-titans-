@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { CalendarDays, MapPin, Wallet, UserCheck, Check, Printer, ShieldCheck, FileText } from "lucide-react";
+import { CalendarDays, MapPin, Wallet, UserCheck, Check, Printer, ShieldCheck, FileText, Mail } from "lucide-react";
 import { GlassCard } from "@/components/GlassCard";
 import { SectionHeading } from "@/components/SectionHeading";
 import { Reveal } from "@/components/Reveal";
@@ -381,11 +381,11 @@ export function Camp() {
             <div class="brand-header">
               <div class="eyebrow">Tehri Titans · UPL Franchise</div>
               <div class="title">Registration Confirmed</div>
-              <div class="status-tag">Payment Verified · Status: PAID</div>
+              <div class="status-tag">Status: Registered · Fee Payable at Center</div>
             </div>
 
             <div class="id-row">
-              <span class="id-label">Registration ID</span>
+              <span class="id-label">Registration Reference Code</span>
               <span class="id-val">${successData.registrationId}</span>
             </div>
 
@@ -407,12 +407,12 @@ export function Camp() {
                 <div class="val">${successData.proficiency}</div>
               </div>
               <div class="item">
-                <div class="label">Amount Paid</div>
-                <div class="val amount">₹${successData.amount.toFixed(2)}</div>
+                <div class="label">Registration Fee</div>
+                <div class="val amount" style="color: #f59e0b;">₹${successData.amount.toFixed(2)} (Pay at Center)</div>
               </div>
               <div class="item">
-                <div class="label">Cashfree Order ID</div>
-                <div class="val" style="font-family: monospace; font-size: 11px;">${successData.cashfreeOrderId}</div>
+                <div class="label">Payment Mode</div>
+                <div class="val" style="font-family: monospace; font-size: 11px; color: #38bdf8;">OFFLINE (Venue Payment)</div>
               </div>
             </div>
 
@@ -595,8 +595,8 @@ export function Camp() {
                         <span className="text-navy-400 uppercase font-bold text-[10px]">
                           Payment Status
                         </span>
-                        <p className="font-mono text-[11px] text-ice-400 font-bold mt-0.5">
-                          OFFLINE (Pending Venue Payment)
+                        <p className="font-mono text-[11px] text-amber-300 font-bold mt-0.5">
+                          DUE AT VENUE (₹999 Payable Offline)
                         </p>
                       </div>
                     </div>
@@ -606,7 +606,7 @@ export function Camp() {
                     <button
                       type="button"
                       onClick={handlePrintReceipt}
-                      className="flex-1 inline-flex items-center justify-center gap-2 bg-navy-800 border border-navy-700 py-3 text-xs font-bold uppercase tracking-wider text-white rounded-lg hover:bg-navy-750 transition-colors"
+                      className="flex-1 inline-flex items-center justify-center gap-2 bg-navy-900 border border-ice-500/40 text-white py-3 text-xs font-bold uppercase tracking-wider rounded-lg hover:border-ice-500 transition-colors shadow-glow-cyan-sm"
                     >
                       <Printer className="h-4 w-4 text-ice-500" />
                       Save / Print Pass
@@ -631,10 +631,10 @@ export function Camp() {
                     Trials Registration
                   </h3>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-4 sm:grid-cols-2 font-sans">
                     <div className="sm:col-span-2">
                       <label className={labelClass} htmlFor="name">
-                        Full name *
+                        Full Name *
                       </label>
                       <input
                         id="name"
@@ -755,6 +755,69 @@ export function Camp() {
                 </form>
               )}
             </GlassCard>
+          </div>
+        </div>
+
+        {/* Contact Us Section */}
+        <div id="contact" className="mt-20 scroll-mt-24 pt-12 border-t border-navy-700/20">
+          <Reveal className="text-center max-w-2xl mx-auto mb-10">
+            <span className="text-xs font-bold uppercase tracking-[0.25em] text-ice-500">
+              Get In Touch
+            </span>
+            <h3 className="mt-2 text-3xl sm:text-4xl font-display uppercase tracking-wide text-navy-950 font-extrabold">
+              Contact Tehri Titans
+            </h3>
+            <p className="mt-2 text-xs sm:text-sm text-navy-800 font-sans font-medium">
+              Have questions regarding trials, academy admissions, or sponsorships? Reach out directly to our team.
+            </p>
+          </Reveal>
+
+          <div className="grid gap-6 sm:grid-cols-2 max-w-4xl mx-auto">
+            {/* General Queries Card */}
+            <Reveal delay={0.05}>
+              <div className="bg-navy-950 border border-navy-800 p-6 rounded-2xl shadow-xl flex items-start gap-4 hover:border-ice-500/50 transition-all duration-300 group">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-ice-500/15 border border-ice-500/30 text-ice-400 group-hover:scale-105 transition-transform">
+                  <Mail className="h-6 w-6 text-ice-400" />
+                </span>
+                <div className="space-y-1 font-sans">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-ice-500 block">
+                    General &amp; Trial Inquiries
+                  </span>
+                  <a
+                    href="mailto:info@tehrititans.in"
+                    className="text-base sm:text-lg font-bold text-white hover:text-ice-400 transition-colors block font-mono"
+                  >
+                    info@tehrititans.in
+                  </a>
+                  <p className="text-xs text-ice-200/70 leading-relaxed">
+                    For player support, trial dates, eligibility, and pass verification.
+                  </p>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Marketing & Media Card */}
+            <Reveal delay={0.1}>
+              <div className="bg-navy-950 border border-navy-800 p-6 rounded-2xl shadow-xl flex items-start gap-4 hover:border-ice-500/50 transition-all duration-300 group">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-ice-500/15 border border-ice-500/30 text-ice-400 group-hover:scale-105 transition-transform">
+                  <Mail className="h-6 w-6 text-ice-400" />
+                </span>
+                <div className="space-y-1 font-sans">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-ice-500 block">
+                    Marketing &amp; Sponsorships
+                  </span>
+                  <a
+                    href="mailto:marketing@tehrititans.in"
+                    className="text-base sm:text-lg font-bold text-white hover:text-ice-400 transition-colors block font-mono"
+                  >
+                    marketing@tehrititans.in
+                  </a>
+                  <p className="text-xs text-ice-200/70 leading-relaxed">
+                    For brand partnerships, commercial inquiries, media, and press.
+                  </p>
+                </div>
+              </div>
+            </Reveal>
           </div>
         </div>
       </div>

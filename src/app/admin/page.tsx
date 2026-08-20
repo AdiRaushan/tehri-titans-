@@ -363,16 +363,14 @@ export default function AdminPage() {
                   <th className="p-4">Player Details</th>
                   <th className="p-4">Contact</th>
                   <th className="p-4">Role / Age</th>
-                  <th className="p-4">Attempts</th>
                   <th className="p-4">Created Date</th>
-                  <th className="p-4">Audit Trace</th>
                   <th className="p-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {paginatedRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="p-12 text-center text-slate-400 font-semibold">
+                    <td colSpan={7} className="p-12 text-center text-slate-400 font-semibold">
                       No registration records found matching criteria.
                     </td>
                   </tr>
@@ -386,129 +384,55 @@ export default function AdminPage() {
                     if (r.status === "EXPIRED")
                       badgeClass = "bg-rose-100 text-rose-800 border-rose-300";
 
-                    const isExpanded = expandedId === r.registrationId;
-                    const attemptsCount = r.paymentAttempts?.length || 0;
-
                     return (
-                      <React.Fragment key={r.registrationId}>
-                        <tr className="hover:bg-slate-50 transition-colors">
-                          <td className="p-4 font-mono font-bold text-navy-950 text-sm">
-                            {r.registrationId}
-                          </td>
-                          <td className="p-4">
-                            <span
-                              className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] uppercase tracking-wider border ${badgeClass}`}
-                            >
-                              {r.status}
-                            </span>
-                          </td>
-                          <td className="p-4 font-semibold text-navy-950">
-                            <div className="text-sm">{r.name}</div>
-                            <div className="text-[11px] text-slate-500 font-normal truncate max-w-[160px]">
-                              {r.address}
-                            </div>
-                          </td>
-                          <td className="p-4 text-navy-900 font-medium">
-                            <div>{r.mobile}</div>
-                            <div className="text-[11px] text-slate-500 font-normal">{r.email}</div>
-                          </td>
-                          <td className="p-4 text-navy-900">
-                            <div className="font-semibold">{r.proficiency}</div>
-                            <div className="text-[11px] text-slate-500 font-normal">Age: {r.age}</div>
-                          </td>
-                          <td className="p-4 font-semibold text-navy-950">
-                            <span className="inline-flex items-center gap-1 bg-slate-100 border border-slate-300 px-2.5 py-1 rounded-lg text-slate-800 font-mono text-[11px]">
-                              <History className="h-3 w-3 text-navy-700" />
-                              {attemptsCount} attempt{attemptsCount === 1 ? "" : "s"}
-                            </span>
-                          </td>
-                          <td className="p-4 text-[11px] text-slate-500 whitespace-nowrap">
-                            {r.createdAt
-                              ? new Date(r.createdAt).toLocaleString("en-IN", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : "-"}
-                          </td>
-                          <td className="p-4">
-                            <button
-                              type="button"
-                              onClick={() => setExpandedId(isExpanded ? null : r.registrationId)}
-                              className="inline-flex items-center gap-1 text-navy-900 hover:text-navy-700 font-bold uppercase text-[11px]"
-                            >
-                              {isExpanded ? <ChevronUp className="h-4 w-4 text-navy-950" /> : <ChevronDown className="h-4 w-4 text-navy-950" />}
-                              Audit Log
-                            </button>
-                          </td>
-                          <td className="p-4 text-right">
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(r.registrationId, r.name)}
-                              disabled={deletingId === r.registrationId}
-                              className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-600 hover:text-white hover:border-rose-600 transition-all px-3 py-1.5 rounded-lg text-[11px] font-extrabold uppercase disabled:opacity-50 shadow-sm"
-                              title={`Delete registration ${r.registrationId}`}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              {deletingId === r.registrationId ? "Deleting..." : "Delete"}
-                            </button>
-                          </td>
-                        </tr>
-
-                        {/* Audit Log Drawer */}
-                        {isExpanded && (
-                          <tr className="bg-slate-100/90">
-                            <td colSpan={9} className="p-4 border-t border-slate-300">
-                              <div className="bg-white border border-slate-300 p-5 rounded-xl space-y-3 shadow-sm">
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-navy-950 flex items-center gap-2">
-                                  <History className="h-4 w-4 text-navy-900" />
-                                  Payment Attempt Trace History for {r.registrationId}
-                                </h4>
-                                <div className="space-y-2">
-                                  {r.paymentAttempts.map((att, idx) => (
-                                    <div
-                                      key={att.cashfreeOrderId}
-                                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs gap-2"
-                                    >
-                                      <div>
-                                        <span className="font-mono text-navy-950 font-bold">
-                                          #{idx + 1} · Order ID: {att.cashfreeOrderId}
-                                        </span>
-                                        {att.cashfreePaymentId && (
-                                          <div className="text-emerald-700 font-mono font-semibold text-[11px] mt-0.5">
-                                            Payment ID: {att.cashfreePaymentId} ({att.paymentMethod || "online"})
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-4">
-                                        <span className="font-bold text-navy-950">₹{att.amount.toFixed(2)}</span>
-                                        <span
-                                          className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
-                                            att.status === "SUCCESS"
-                                              ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                              : att.status === "CANCELLED"
-                                              ? "bg-rose-100 text-rose-800 border-rose-300"
-                                              : "bg-amber-100 text-amber-800 border-amber-300"
-                                          }`}
-                                        >
-                                          {att.status}
-                                        </span>
-                                        <span className="text-[10px] text-slate-500 font-mono">
-                                          {new Date(att.createdAt).toLocaleTimeString("en-IN", {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                          })}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
+                      <tr key={r.registrationId} className="hover:bg-slate-50 transition-colors">
+                        <td className="p-4 font-mono font-bold text-navy-950 text-sm">
+                          {r.registrationId}
+                        </td>
+                        <td className="p-4">
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] uppercase tracking-wider border ${badgeClass}`}
+                          >
+                            {r.status}
+                          </span>
+                        </td>
+                        <td className="p-4 font-semibold text-navy-950">
+                          <div className="text-sm">{r.name}</div>
+                          <div className="text-[11px] text-slate-500 font-normal truncate max-w-[180px]">
+                            {r.address}
+                          </div>
+                        </td>
+                        <td className="p-4 text-navy-900 font-medium">
+                          <div>{r.mobile}</div>
+                          <div className="text-[11px] text-slate-500 font-normal">{r.email}</div>
+                        </td>
+                        <td className="p-4 text-navy-900">
+                          <div className="font-semibold">{r.proficiency}</div>
+                          <div className="text-[11px] text-slate-500 font-normal">Age: {r.age}</div>
+                        </td>
+                        <td className="p-4 text-[11px] text-slate-500 whitespace-nowrap">
+                          {r.createdAt
+                            ? new Date(r.createdAt).toLocaleString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "-"}
+                        </td>
+                        <td className="p-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(r.registrationId, r.name)}
+                            disabled={deletingId === r.registrationId}
+                            className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-600 hover:text-white hover:border-rose-600 transition-all px-3 py-1.5 rounded-lg text-[11px] font-extrabold uppercase disabled:opacity-50 shadow-sm"
+                            title={`Delete registration ${r.registrationId}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            {deletingId === r.registrationId ? "Deleting..." : "Delete"}
+                          </button>
+                        </td>
+                      </tr>
                     );
                   })
                 )}

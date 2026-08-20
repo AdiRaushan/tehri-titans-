@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { UPLMark } from "./UPLMark";
-import { navLinks, socialLinks, contactEmail } from "@/data/nav";
+import { navLinks, socialLinks, contactEmails } from "@/data/nav";
 import { franchise } from "@/data/franchise";
 
 const iconMap: Record<string, LucideIcon> = {
@@ -129,8 +129,13 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <a href={`mailto:${contactEmail}`} className="hover:text-white transition-colors">
-                    Contact Us ({contactEmail})
+                  <a href={`mailto:${contactEmails.general}`} className="hover:text-white transition-colors">
+                    General: {contactEmails.general}
+                  </a>
+                </li>
+                <li>
+                  <a href={`mailto:${contactEmails.marketing}`} className="hover:text-white transition-colors">
+                    Marketing: {contactEmails.marketing}
                   </a>
                 </li>
                 <li className="text-ice-200/50">

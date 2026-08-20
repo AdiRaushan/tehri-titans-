@@ -15,7 +15,7 @@ export const navLinks: NavLink[] = [
   { label: "The Club", href: "/#journey" },
   { label: "Gallery", href: "/#gallery" },
   { label: "Academy", href: "/#academy" },
-  { label: "Trials", href: "/#trials" },
+  { label: "Contact Us", href: "/#contact" },
 ];
 
 export const primaryCta: NavLink = { label: "Register for Trials", href: "/#trials" };
@@ -31,7 +31,10 @@ export const footerLinks: NavLink[] = [
   { label: "Franchise", href: "/#about" },
   { label: "The Club", href: "/#journey" },
   { label: "Academy", href: "/#academy" },
-  { label: "Trials", href: "/#trials" },
+  { label: "Contact Us", href: "/#contact" },
 ];
 
-export const contactEmail = "info@tehrititans.com";
+export const contactEmails = {
+  general: "info@tehrititans.in",
+  marketing: "marketing@tehrititans.in",
+};
