@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    @apply bg-white text-navy-950 font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display uppercase tracking-wide;
+    text-wrap: balance;
+  }
+
+  /* Visible, on-brand focus rings for keyboard users. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ice-500 ring-offset-2 ring-offset-frost;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Subtle blue-tinted section for gentle alternation on the white base. */
+  .section-frost {
+    @apply bg-frost;
+  }
+}
