@@ -1,0 +1,6 @@
+
+# camp registrations (local dev store)
+registrations.json
+
+# local env
+.env*.local
