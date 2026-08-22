@@ -34,9 +34,9 @@ export async function sendRegistrationConfirmationEmail({
     return { success: false, error: "Invalid recipient email" };
   }
 
-  // Default from address (uses custom verified domain if set)
+  // Default from address (uses custom verified domain if set, fallback to Resend onboarding)
   const fromEmail =
-    process.env.RESEND_FROM_EMAIL || "Tehri Titans Trials <trials@tehrititans.in>";
+    process.env.RESEND_FROM_EMAIL || "Tehri Titans Trials <onboarding@resend.dev>";
 
   const latestAttempt =
     registration.paymentAttempts[registration.paymentAttempts.length - 1];
