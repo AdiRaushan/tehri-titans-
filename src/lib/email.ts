@@ -160,7 +160,7 @@ export async function sendRegistrationConfirmationEmail({
                 <div style="border-top:1px solid #1e293b; padding-top:12px; margin-top:12px; font-size:13px; color:#e2e8f0;">
                   <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
                     <tr>
-                      <td style="color:#e2e8f0; font-size:13px;"><strong>Dates:</strong> 24 &amp; 25 August</td>
+                      <td style="color:#e2e8f0; font-size:13px;"><strong>Dates:</strong> 26 &amp; 27 August</td>
                       <td style="color:#e2e8f0; font-size:13px; text-align:right;"><strong>Reporting Time:</strong> 10:00 AM to 11:00 AM</td>
                     </tr>
                   </table>

@@ -384,6 +384,10 @@ export function Camp() {
                 <div class="val">${successData.proficiency}</div>
               </div>
               <div class="item">
+                <div class="label">Trial Dates</div>
+                <div class="val" style="color: #0ACFFB; font-weight: 700;">26 &amp; 27 August</div>
+              </div>
+              <div class="item">
                 <div class="label">Registration Fee</div>
                 <div class="val amount" style="color: #34d399;">₹${successData.amount.toFixed(2)} (Paid)</div>
               </div>
@@ -558,6 +562,14 @@ export function Camp() {
                         </span>
                         <p className="font-semibold text-white mt-0.5">
                           {successData.proficiency}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-navy-400 uppercase font-bold text-[10px]">
+                          Trial Dates
+                        </span>
+                        <p className="font-semibold text-ice-400 mt-0.5">
+                          26 &amp; 27 August
                         </p>
                       </div>
                       <div>

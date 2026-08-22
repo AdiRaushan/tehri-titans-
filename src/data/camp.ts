@@ -47,9 +47,9 @@ export const camp: Camp = {
   name: "Tehri Titans Trials",
   tagline: "Earn your place in the squad.",
   intro:
-    "Open trials for Tehri Titans, held on 24 & 25 August. Register to put your game in front of the franchise's selectors and coaches, and make your case for a place in the squad.",
+    "Open trials for Tehri Titans, held on 26 & 27 August. Register to put your game in front of the franchise's selectors and coaches, and make your case for a place in the squad.",
   details: [
-    { label: "Dates", value: "24 & 25 August" },
+    { label: "Dates", value: "26 & 27 August" },
     {
       label: "Venue",
       value: "Ayush Cricket Academy, Chidderwala, Kansrao, Uttarakhand 249204",

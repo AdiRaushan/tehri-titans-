@@ -114,8 +114,8 @@ const jsonLdSchema = {
       "@type": "SportsEvent",
       "name": "Tehri Titans Open Trials",
       "description": "Official player trials for Tehri Titans T20 Franchise in the Uttarakhand Premier League.",
-      "startDate": "2026-08-24T09:00:00+05:30",
-      "endDate": "2026-08-25T17:00:00+05:30",
+      "startDate": "2026-08-26T09:00:00+05:30",
+      "endDate": "2026-08-27T17:00:00+05:30",
       "eventStatus": "https://schema.org/EventScheduled",
       "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
       "location": {
