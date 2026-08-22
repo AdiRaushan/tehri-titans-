@@ -1,7 +1,20 @@
 import { promises as fs } from "fs";
 import path from "path";
 import os from "os";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { fetchCashfreeOrder } from "@/lib/cashfree";
+
+function getSupabaseClient(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (url && key) {
+    return createClient(url, key);
+  }
+  return null;
+}
 
 export type RegistrationStatus = "PENDING" | "PAID" | "EXPIRED" | "OFFLINE";
 export type PaymentAttemptStatus = "PENDING" | "SUCCESS" | "FAILED" | "CANCELLED";
@@ -108,32 +121,63 @@ function migrateRecord(raw: Record<string, unknown>): RegistrationRecord {
 let memoryStore: RegistrationRecord[] | null = null;
 
 /**
- * Reads all registrations from persistent file store with in-memory fallback
+ * Reads all registrations from persistent file store or Supabase cloud store
  */
 export async function readRegistrations(): Promise<RegistrationRecord[]> {
-  if (memoryStore && memoryStore.length > 0) {
-    return memoryStore;
-  }
-
+  let fileRecords: RegistrationRecord[] = [];
   const storePath = getStorePath();
   const seedPath = path.join(process.cwd(), "registrations.json");
 
   try {
     const content = await fs.readFile(storePath, "utf8");
     const parsed = JSON.parse(content) as Record<string, unknown>[];
-    memoryStore = parsed.map(migrateRecord);
-    return memoryStore;
+    fileRecords = parsed.map(migrateRecord);
   } catch {
     try {
       const seedContent = await fs.readFile(seedPath, "utf8");
       const parsedSeed = JSON.parse(seedContent) as Record<string, unknown>[];
-      memoryStore = parsedSeed.map(migrateRecord);
-      return memoryStore;
+      fileRecords = parsedSeed.map(migrateRecord);
     } catch {
-      memoryStore = [];
-      return memoryStore;
+      fileRecords = [];
     }
   }
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.from("registrations").select("*");
+      if (!error && Array.isArray(data) && data.length > 0) {
+        const supabaseRecords = data.map((row) =>
+          migrateRecord({
+            id: row.id,
+            registrationId: row.registration_id,
+            name: row.name,
+            email: row.email,
+            mobile: row.mobile,
+            age: row.age,
+            proficiency: row.proficiency,
+            address: row.address,
+            status: row.status,
+            createdAt: row.created_at,
+            expiresAt: row.expires_at,
+            paidAt: row.paid_at,
+            paymentAttempts: row.payment_attempts,
+          })
+        );
+
+        const map = new Map<string, RegistrationRecord>();
+        for (const r of fileRecords) map.set(r.registrationId, r);
+        for (const r of supabaseRecords) map.set(r.registrationId, r);
+        memoryStore = Array.from(map.values());
+        return memoryStore;
+      }
+    } catch (err) {
+      console.warn("Supabase read fallback to local JSON file:", err);
+    }
+  }
+
+  memoryStore = fileRecords;
+  return memoryStore;
 }
 
 /**
@@ -160,10 +204,35 @@ export function sanitizeName(input: string): string {
 let writeQueueLock: Promise<void> = Promise.resolve();
 
 /**
- * Writes registrations array atomically with writeQueueLock concurrency safety for 500+ users
+ * Writes registrations array atomically with writeQueueLock concurrency safety and Supabase cloud sync
  */
 export async function writeRegistrations(records: RegistrationRecord[]): Promise<void> {
   memoryStore = records; // Keep in-memory cache instantly updated
+
+  const supabase = getSupabaseClient();
+  if (supabase && records.length > 0) {
+    try {
+      const rows = records.map((r) => ({
+        id: r.id,
+        registration_id: r.registrationId,
+        name: r.name,
+        email: r.email,
+        mobile: r.mobile,
+        age: r.age,
+        proficiency: r.proficiency,
+        address: r.address,
+        status: r.status,
+        created_at: r.createdAt,
+        expires_at: r.expiresAt,
+        paid_at: r.paidAt || null,
+        payment_attempts: r.paymentAttempts,
+      }));
+
+      await supabase.from("registrations").upsert(rows, { onConflict: "id" });
+    } catch (err) {
+      console.warn("Supabase upsert sync error:", err);
+    }
+  }
 
   const task = writeQueueLock.then(async () => {
     let storePath = getStorePath();
@@ -561,6 +630,14 @@ export async function deleteRegistration(queryStr: string): Promise<boolean> {
   const queryDigits = query.replace(/\D/g, "");
   const initialLength = records.length;
 
+  const target = records.find((r) => {
+    const regId = (r.registrationId || "").trim().toUpperCase();
+    const id = (r.id || "").trim().toUpperCase();
+    if (regId === query || id === query) return true;
+    if (queryDigits && regId.replace(/\D/g, "") === queryDigits && queryDigits.length > 0) return true;
+    return false;
+  });
+
   const filtered = records.filter((r) => {
     const regId = (r.registrationId || "").trim().toUpperCase();
     const id = (r.id || "").trim().toUpperCase();
@@ -571,6 +648,15 @@ export async function deleteRegistration(queryStr: string): Promise<boolean> {
 
   if (filtered.length === initialLength) {
     return false;
+  }
+
+  const supabase = getSupabaseClient();
+  if (supabase && target) {
+    try {
+      await supabase.from("registrations").delete().eq("id", target.id);
+    } catch (err) {
+      console.warn("Supabase delete error:", err);
+    }
   }
 
   await writeRegistrations(filtered);

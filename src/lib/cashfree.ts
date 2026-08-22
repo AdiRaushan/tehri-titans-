@@ -54,10 +54,15 @@ export async function createCashfreeOrder(
     );
   }
 
-  const websiteUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3010";
-  const returnUrl =
+  const websiteUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://localhost:3010";
+  let returnUrl =
     params.returnUrl ||
     `${websiteUrl}/api/cashfree/return?order_id={order_id}`;
+
+  // Cashfree Production API strictly requires return_url to start with https://
+  if (config.env === "PRODUCTION" && returnUrl.startsWith("http://")) {
+    returnUrl = returnUrl.replace(/^http:\/\//, "https://");
+  }
 
   // Clean phone number (remove leading +91 or spaces, Cashfree expects 10 digits)
   const phoneClean = params.customerDetails.customerPhone

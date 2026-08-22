@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { CalendarDays, MapPin, Wallet, UserCheck, Check, Printer, ShieldCheck, FileText, Mail } from "lucide-react";
+import { CalendarDays, MapPin, Wallet, UserCheck, Check, Printer, ShieldCheck, FileText, Mail, Sparkles } from "lucide-react";
 import { GlassCard } from "@/components/GlassCard";
 import { SectionHeading } from "@/components/SectionHeading";
 import { Reveal } from "@/components/Reveal";
@@ -107,6 +107,7 @@ export function Camp() {
   // Poll server verification until payment is confirmed
   async function pollStatus(regId: string, attempts = 0) {
     if (attempts > 12) {
+      setStatus("idle");
       return fail(
         "Payment verification timed out. If money was deducted, your registration is safe — please contact support with your registration ID."
       );
@@ -134,7 +135,12 @@ export function Camp() {
           setStatus("success");
           setForm(emptyForm);
           return;
+        } else if (reg.status === "CANCELLED" || reg.status === "FAILED") {
+          setStatus("idle");
+          setError("Payment was cancelled or unsuccessful. You can try again when ready.");
+          return;
         } else if (reg.status === "EXPIRED") {
+          setStatus("idle");
           return fail("Payment window (15 mins) expired. Please try submitting again to generate a new payment link.");
         }
       }
@@ -158,6 +164,42 @@ export function Camp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function fillRandomTestData() {
+    const firstNames = [
+      "Rohit", "Aayush", "Suraj", "Vikas", "Deepak", "Amit", "Pawan", "Rahul",
+      "Karan", "Siddharth", "Manish", "Yash", "Aditya", "Shubham", "Gaurav", "Pankaj"
+    ];
+    const lastNames = [
+      "Garhwali", "Rawat", "Negi", "Chauhan", "Joshi", "Bhandari", "Bisht", "Rana",
+      "Verma", "Bhatt", "Kandari", "Uniyal", "Panwar", "Gairola", "Semwal"
+    ];
+    const cities = [
+      "New Tehri", "Chamba", "Dehradun", "Rishikesh", "Narendranagar",
+      "Dharasu", "Ghansali", "Srinagar Garhwal", "Kirti Nagar"
+    ];
+
+    const fn = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const city = cities[Math.floor(Math.random() * cities.length)];
+
+    const randomName = `${fn} ${ln}`;
+    const randomMobile = "9" + Math.floor(100000003 + Math.random() * 899999990).toString();
+    const randomEmail = `${fn.toLowerCase()}.${ln.toLowerCase()}${Math.floor(Math.random() * 999)}@gmail.com`;
+    const randomAge = (17 + Math.floor(Math.random() * 14)).toString();
+    const randomProficiency = proficiencyOptions[Math.floor(Math.random() * proficiencyOptions.length)];
+    const randomAddress = `House #${Math.floor(Math.random() * 250 + 1)}, Main Road, ${city}, Tehri Garhwal, Uttarakhand`;
+
+    setForm({
+      name: randomName,
+      email: randomEmail,
+      mobile: randomMobile,
+      age: randomAge,
+      proficiency: randomProficiency,
+      address: randomAddress,
+    });
+    setError("");
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("submitting");
@@ -174,47 +216,6 @@ export function Camp() {
     }
 
     try {
-      // Register offline directly & record entry in database
-      const res = await fetch("/api/register-offline", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) {
-        return fail(data.error ?? "Could not process registration.");
-      }
-
-      const reg = data.registration;
-      setSuccessData({
-        registrationId: reg.registrationId,
-        cashfreeOrderId: reg.paymentAttempts?.[0]?.cashfreeOrderId || `OFFLINE-${reg.registrationId}`,
-        cashfreePaymentId: "Pay Offline at Center",
-        name: reg.name,
-        email: reg.email,
-        mobile: reg.mobile,
-        proficiency: reg.proficiency,
-        amount: 999,
-        paidAt: reg.createdAt,
-      });
-      setStatus("success");
-      setForm(emptyForm);
-    } catch (err) {
-      fail(
-        err instanceof Error ? err.message : "An unexpected error occurred."
-      );
-    }
-  }
-
-  // Preserved Cashfree integration helper for future online checkout activation
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async function onSubmitCashfree(e: React.FormEvent) {
-    e.preventDefault();
-    setStatus("submitting");
-    setError("");
-
-    try {
       const orderRes = await fetch("/api/cashfree/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -229,20 +230,32 @@ export function Camp() {
       const { registrationId, paymentSessionId, env } = orderData;
       const sdkLoaded = await loadCashfreeSDK();
       if (!sdkLoaded || !window.Cashfree) {
-        return fail("Could not load Cashfree Payment SDK. Please check connection.");
+        return fail("Could not load Cashfree Payment SDK. Please check internet connection.");
       }
 
       const cashfreeMode = env === "PRODUCTION" ? "production" : "sandbox";
       const cashfree = window.Cashfree({ mode: cashfreeMode });
 
-      await cashfree.checkout({
+      const result = await cashfree.checkout({
         paymentSessionId,
         redirectTarget: "_modal",
       });
 
+      if (result && result.error) {
+        setStatus("idle");
+        const errMsg = result.error.message || "";
+        if (errMsg && !errMsg.toLowerCase().includes("close") && !errMsg.toLowerCase().includes("cancel")) {
+          setError(errMsg);
+        }
+        return;
+      }
+
       pollStatus(registrationId, 0);
     } catch (err) {
-      fail(err instanceof Error ? err.message : "An unexpected error occurred.");
+      setStatus("idle");
+      fail(
+        err instanceof Error ? err.message : "An unexpected error occurred during checkout."
+      );
     }
   }
 
@@ -381,7 +394,7 @@ export function Camp() {
             <div class="brand-header">
               <div class="eyebrow">Tehri Titans · UPL Franchise</div>
               <div class="title">Registration Confirmed</div>
-              <div class="status-tag">Status: Registered · Fee Payable at Center</div>
+              <div class="status-tag">Status: PAID · Cashfree Verified</div>
             </div>
 
             <div class="id-row">
@@ -408,11 +421,11 @@ export function Camp() {
               </div>
               <div class="item">
                 <div class="label">Registration Fee</div>
-                <div class="val amount" style="color: #f59e0b;">₹${successData.amount.toFixed(2)} (Pay at Center)</div>
+                <div class="val amount" style="color: #34d399;">₹${successData.amount.toFixed(2)} (Paid)</div>
               </div>
               <div class="item">
-                <div class="label">Payment Mode</div>
-                <div class="val" style="font-family: monospace; font-size: 11px; color: #38bdf8;">OFFLINE (Venue Payment)</div>
+                <div class="label">Payment Mode / ID</div>
+                <div class="val" style="font-family: monospace; font-size: 11px; color: #38bdf8;">CASHFREE (${successData.cashfreePaymentId || successData.cashfreeOrderId})</div>
               </div>
             </div>
 
@@ -522,17 +535,17 @@ export function Camp() {
                       Registration Successful!
                     </h3>
                     <p className="mt-1 text-xs text-ice-400 font-bold uppercase tracking-widest">
-                      Registration Pass Generated · Offline Payment at Center
+                      Registration Pass Generated · Cashfree Payment Verified
                     </p>
                   </div>
 
                   {/* Screenshot Proof Notice */}
                   <div className="bg-navy-950 border border-ice-500/40 p-4 rounded-xl text-center space-y-1.5 shadow-sm">
                     <p className="text-xs font-bold uppercase tracking-wider text-ice-400 flex items-center justify-center gap-1.5">
-                      📸 Important: Screenshot This Confirmation Pass
+                      📸 Important: Save Your Pass &amp; Reference Code
                     </p>
                     <p className="text-xs text-ice-200/80 leading-relaxed font-sans">
-                      Please take a screenshot of this registration pass or save your Reference Code <strong className="text-white font-mono">{successData.registrationId}</strong>. Show this proof at the offline center when paying the ₹999 registration fee on trial day.
+                      Your payment of ₹{successData.amount} has been verified via Cashfree. Save your Reference Code <strong className="text-white font-mono">{successData.registrationId}</strong> and present this pass at the trial center on trial day.
                     </p>
                   </div>
 
@@ -587,16 +600,16 @@ export function Camp() {
                         <span className="text-navy-400 uppercase font-bold text-[10px]">
                           Trial Fee
                         </span>
-                        <p className="font-bold text-amber-400 mt-0.5">
-                          ₹{successData.amount.toFixed(2)} (Pay at Center)
+                        <p className="font-bold text-emerald-400 mt-0.5">
+                          ₹{successData.amount.toFixed(2)} (Paid)
                         </p>
                       </div>
                       <div>
                         <span className="text-navy-400 uppercase font-bold text-[10px]">
                           Payment Status
                         </span>
-                        <p className="font-mono text-[11px] text-amber-300 font-bold mt-0.5">
-                          DUE AT VENUE (₹999 Payable Offline)
+                        <p className="font-mono text-[11px] text-emerald-400 font-bold mt-0.5">
+                          PAID (Cashfree Verified)
                         </p>
                       </div>
                     </div>
@@ -627,9 +640,20 @@ export function Camp() {
                 </motion.div>
               ) : (
                 <form onSubmit={onSubmit} className="flex flex-col gap-5">
-                  <h3 className="text-2xl font-display uppercase tracking-wide text-ice-200">
-                    Trials Registration
-                  </h3>
+                  <div className="flex items-center justify-between gap-3 flex-wrap border-b border-navy-800/80 pb-3">
+                    <h3 className="text-2xl font-display uppercase tracking-wide text-ice-200">
+                      Trials Registration
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={fillRandomTestData}
+                      className="inline-flex items-center gap-1.5 bg-navy-900 border border-ice-500/40 text-ice-400 hover:text-white hover:bg-ice-500/20 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-glow-cyan-sm"
+                      title="Auto-fill form with random player test data"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-ice-400" />
+                      Test Random Data
+                    </button>
+                  </div>
 
                   <div className="grid gap-4 sm:grid-cols-2 font-sans">
                     <div className="sm:col-span-2">
@@ -745,12 +769,12 @@ export function Camp() {
                   >
                     <span className="skew-x-[12deg] inline-flex items-center gap-2">
                       {status === "submitting"
-                        ? "Registering Player..."
-                        : `Register Now (Pay ₹${feeAmountRupees} at Center)`}
+                        ? "Initiating Cashfree Payment..."
+                        : `Proceed to Pay ₹${feeAmountRupees}`}
                     </span>
                   </button>
                   <p className="text-xs text-ice-200/70 font-sans leading-relaxed">
-                    * Online registration reserves your slot. The registration fee of ₹999 will be paid offline at the trial center on trial day.
+                    * Official registration fee of ₹{feeAmountRupees} processed securely via Cashfree Payments Gateway (UPI, Credit/Debit Cards, Netbanking, Wallets).
                   </p>
                 </form>
               )}
