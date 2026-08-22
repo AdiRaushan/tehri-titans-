@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     await sendRegistrationConfirmationEmail({
       registration: updated,
       cashfreePaymentId: paymentId,
-      amount: Number(order.order_amount) || 1,
+      amount: Number(order.order_amount) || 999,
     });
   }
 

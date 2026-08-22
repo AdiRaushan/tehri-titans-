@@ -33,7 +33,7 @@ export async function GET(
     await sendRegistrationConfirmationEmail({
       registration,
       cashfreePaymentId: registration.paymentAttempts.find((a) => a.status === "SUCCESS")?.cashfreePaymentId,
-      amount: 1,
+      amount: 999,
     });
   } else if (registration.status === "PENDING") {
     for (const attempt of registration.paymentAttempts) {
@@ -49,7 +49,7 @@ export async function GET(
             await sendRegistrationConfirmationEmail({
               registration,
               cashfreePaymentId: liveOrder?.cf_order_id,
-              amount: liveOrder?.order_amount || 1,
+              amount: liveOrder?.order_amount || 999,
             });
             break;
           }

@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     await sendRegistrationConfirmationEmail({
       registration: reg,
       cashfreePaymentId: cfOrder?.cf_order_id,
-      amount: cfOrder?.order_amount || 1,
+      amount: cfOrder?.order_amount || 999,
     });
   }
 
