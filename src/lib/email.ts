@@ -63,10 +63,9 @@ export async function sendRegistrationConfirmationEmail({
       <td align="center">
         <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:600px; background-color:#ffffff; border-radius:24px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
           
-          <!-- POLISHED BRAND HEADER WITH OFFICIAL LOGO -->
+          <!-- POLISHED BRAND HEADER -->
           <tr>
             <td style="background-color:#070b14; padding: 36px 30px 28px 30px; text-align: center; border-bottom: 3px solid #38bdf8;">
-              <img src="${logoUrl}" width="80" height="80" alt="Tehri Titans Logo" style="display:inline-block; margin-bottom:12px; border-radius:12px; box-shadow:0 4px 14px rgba(56,189,248,0.25);" />
               <div style="color:#38bdf8; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:3px; margin-bottom:6px;">
                 OFFICIAL PLAYER TRIALS PASS
               </div>
@@ -171,8 +170,6 @@ export async function sendRegistrationConfirmationEmail({
                 </div>
                 <ul style="margin:0; padding-left:20px; font-size:13px; color:#475569; line-height:1.7;">
                   <li>Present this confirmation email or your <strong>Registration ID (${escapeHtml(registration.registrationId)})</strong> at the venue entrance desk.</li>
-                  <li>Bring your own personal cricket gear kit (Bat, Pads, Gloves, Helmet).</li>
-                  <li>Wear white cricket apparel/whites during the trial sessions.</li>
                   <li>Carry valid Government Photo ID proof (Aadhaar / Voter ID / School ID).</li>
                 </ul>
               </div>
