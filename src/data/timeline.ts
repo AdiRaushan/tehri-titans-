@@ -27,6 +27,6 @@ export const timeline: Milestone[] = [
     marker: "June 2026",
     title: "Current Campaign",
     description:
-      "The Titans return for the next UPL season. TODO: add fixtures and results as the 2026 season unfolds.",
+      "The Titans return for the next UPL season.",
   },
 ];
