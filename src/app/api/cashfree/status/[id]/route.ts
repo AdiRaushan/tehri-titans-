@@ -5,6 +5,7 @@ import {
   cleanupExpiredRegistrations,
 } from "@/lib/db";
 import { fetchCashfreeOrder } from "@/lib/cashfree";
+import { sendRegistrationConfirmationEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,6 +40,11 @@ export async function GET(
           );
           if (updated) {
             registration = updated;
+            sendRegistrationConfirmationEmail({
+              registration,
+              cashfreePaymentId: liveOrder?.cf_order_id,
+              amount: liveOrder?.order_amount || 999,
+            }).catch((err) => console.error("Email send error on status check:", err));
             break;
           }
         }

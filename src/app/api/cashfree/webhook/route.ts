@@ -4,6 +4,7 @@ import {
   getRegistrationById,
 } from "@/lib/db";
 import { verifyCashfreeWebhookSignature } from "@/lib/cashfree";
+import { sendRegistrationConfirmationEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,10 +65,18 @@ export async function POST(request: Request) {
   }
 
   // 2) Idempotently update registration record in DB
-  await updateRegistrationPaymentStatus(orderId, newStatus, {
+  const updated = await updateRegistrationPaymentStatus(orderId, newStatus, {
     cashfreePaymentId: paymentId,
     paymentMethod: paymentGroup,
   });
+
+  if (newStatus === "PAID" && updated) {
+    sendRegistrationConfirmationEmail({
+      registration: updated,
+      cashfreePaymentId: paymentId,
+      amount: Number(order.order_amount) || 999,
+    }).catch((err) => console.error("Email send error on webhook:", err));
+  }
 
   return NextResponse.json({ status: "OK", orderId, registrationId: existing.registrationId });
 }

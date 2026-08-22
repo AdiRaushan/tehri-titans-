@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRegistrationById, updateRegistrationPaymentStatus } from "@/lib/db";
 import { fetchCashfreeOrder } from "@/lib/cashfree";
+import { sendRegistrationConfirmationEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,6 +24,15 @@ export async function GET(request: Request) {
   const cfOrder = await fetchCashfreeOrder(orderId);
   if (cfOrder && cfOrder.order_status === "PAID") {
     reg = (await updateRegistrationPaymentStatus(orderId, "PAID")) || reg;
+  }
+
+  // Send confirmation email asynchronously if registration is PAID
+  if (reg && reg.status === "PAID") {
+    sendRegistrationConfirmationEmail({
+      registration: reg,
+      cashfreePaymentId: cfOrder?.cf_order_id,
+      amount: cfOrder?.order_amount || 999,
+    }).catch((err) => console.error("Email send error on return URL:", err));
   }
 
   const redirectUrl = new URL("/#trials", request.url);
