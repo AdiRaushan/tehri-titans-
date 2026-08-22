@@ -662,3 +662,19 @@ export async function deleteRegistration(queryStr: string): Promise<boolean> {
   await writeRegistrations(filtered);
   return true;
 }
+
+/**
+ * Clears all registration records from local store and Supabase cloud database
+ */
+export async function clearAllRegistrations(): Promise<void> {
+  memoryStore = [];
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from("registrations").delete().neq("id", "KEEP_NONE");
+    } catch (err) {
+      console.warn("Supabase clear error:", err);
+    }
+  }
+  await writeRegistrations([]);
+}

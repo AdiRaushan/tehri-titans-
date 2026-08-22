@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { readRegistrations, cleanupExpiredRegistrations, deleteRegistration } from "@/lib/db";
+import {
+  readRegistrations,
+  cleanupExpiredRegistrations,
+  deleteRegistration,
+  clearAllRegistrations,
+} from "@/lib/db";
+import { feeAmountRupees } from "@/data/camp";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,7 +27,7 @@ export async function GET() {
 
   const records = await readRegistrations();
 
-  // Compute stats
+  // Compute stats with exact revenue accounting
   let total = records.length;
   let paid = 0;
   let offline = 0;
@@ -32,7 +38,9 @@ export async function GET() {
   for (const r of records) {
     if (r.status === "PAID") {
       paid++;
-      totalRevenue += 999; // ₹999 per confirmed registration
+      const successfulAttempt = r.paymentAttempts?.find((a) => a.status === "SUCCESS");
+      const paidAmount = Number(successfulAttempt?.amount) || feeAmountRupees || 999;
+      totalRevenue += paidAmount;
     } else if (r.status === "OFFLINE") {
       offline++;
     } else if (r.status === "PENDING") {
@@ -63,7 +71,13 @@ export async function DELETE(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
+    const clearAll = searchParams.get("clearAll") === "true";
     let id = searchParams.get("id");
+
+    if (clearAll) {
+      await clearAllRegistrations();
+      return NextResponse.json({ ok: true, message: "All registration records cleared successfully." });
+    }
 
     if (!id) {
       try {
