@@ -22,9 +22,13 @@ export interface CashfreeOrderResponse {
 }
 
 export function getCashfreeConfig() {
-  const appId = process.env.CASHFREE_APP_ID || "";
-  const secretKey = process.env.CASHFREE_SECRET_KEY || "";
-  const env = (process.env.CASHFREE_ENV || "SANDBOX").toUpperCase();
+  const appId = (process.env.CASHFREE_APP_ID || "").trim();
+  const secretKey = (process.env.CASHFREE_SECRET_KEY || "").trim();
+  const env = (process.env.CASHFREE_ENV || "SANDBOX").trim().toUpperCase();
+
+  const missingVars: string[] = [];
+  if (!appId) missingVars.push("CASHFREE_APP_ID");
+  if (!secretKey) missingVars.push("CASHFREE_SECRET_KEY");
 
   const baseUrl =
     env === "PRODUCTION"
@@ -36,7 +40,8 @@ export function getCashfreeConfig() {
     secretKey,
     env,
     baseUrl,
-    isConfigured: Boolean(appId && secretKey),
+    isConfigured: missingVars.length === 0,
+    missingVars,
   };
 }
 

@@ -15,14 +15,24 @@ const REQUIRED_FIELDS = [
   "address",
 ] as const;
 
+export async function GET() {
+  const config = getCashfreeConfig();
+  return NextResponse.json({
+    isConfigured: config.isConfigured,
+    missingVars: config.missingVars,
+    env: config.env,
+    appIdPrefix: config.appId ? config.appId.substring(0, 6) + "..." : "MISSING",
+    secretKeySet: Boolean(config.secretKey),
+  });
+}
+
 export async function POST(request: Request) {
   const config = getCashfreeConfig();
 
   if (!config.isConfigured) {
     return NextResponse.json(
       {
-        error:
-          "Cashfree Payment Gateway is not configured. Please set CASHFREE_APP_ID and CASHFREE_SECRET_KEY in .env.local",
+        error: `Cashfree Payment Gateway is not configured. Missing: ${config.missingVars.join(", ")}.`,
       },
       { status: 503 }
     );
