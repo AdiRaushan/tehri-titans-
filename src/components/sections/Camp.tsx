@@ -164,42 +164,6 @@ export function Camp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function fillRandomTestData() {
-    const firstNames = [
-      "Rohit", "Aayush", "Suraj", "Vikas", "Deepak", "Amit", "Pawan", "Rahul",
-      "Karan", "Siddharth", "Manish", "Yash", "Aditya", "Shubham", "Gaurav", "Pankaj"
-    ];
-    const lastNames = [
-      "Garhwali", "Rawat", "Negi", "Chauhan", "Joshi", "Bhandari", "Bisht", "Rana",
-      "Verma", "Bhatt", "Kandari", "Uniyal", "Panwar", "Gairola", "Semwal"
-    ];
-    const cities = [
-      "New Tehri", "Chamba", "Dehradun", "Rishikesh", "Narendranagar",
-      "Dharasu", "Ghansali", "Srinagar Garhwal", "Kirti Nagar"
-    ];
-
-    const fn = firstNames[Math.floor(Math.random() * firstNames.length)];
-    const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
-    const city = cities[Math.floor(Math.random() * cities.length)];
-
-    const randomName = `${fn} ${ln}`;
-    const randomMobile = "9" + Math.floor(100000003 + Math.random() * 899999990).toString();
-    const randomEmail = `${fn.toLowerCase()}.${ln.toLowerCase()}${Math.floor(Math.random() * 999)}@gmail.com`;
-    const randomAge = (17 + Math.floor(Math.random() * 14)).toString();
-    const randomProficiency = proficiencyOptions[Math.floor(Math.random() * proficiencyOptions.length)];
-    const randomAddress = `House #${Math.floor(Math.random() * 250 + 1)}, Main Road, ${city}, Tehri Garhwal, Uttarakhand`;
-
-    setForm({
-      name: randomName,
-      email: randomEmail,
-      mobile: randomMobile,
-      age: randomAge,
-      proficiency: randomProficiency,
-      address: randomAddress,
-    });
-    setError("");
-  }
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("submitting");
@@ -644,15 +608,6 @@ export function Camp() {
                     <h3 className="text-2xl font-display uppercase tracking-wide text-ice-200">
                       Trials Registration
                     </h3>
-                    <button
-                      type="button"
-                      onClick={fillRandomTestData}
-                      className="inline-flex items-center gap-1.5 bg-navy-900 border border-ice-500/40 text-ice-400 hover:text-white hover:bg-ice-500/20 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-glow-cyan-sm"
-                      title="Auto-fill form with random player test data"
-                    >
-                      <Sparkles className="h-3.5 w-3.5 text-ice-400" />
-                      Test Random Data
-                    </button>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2 font-sans">

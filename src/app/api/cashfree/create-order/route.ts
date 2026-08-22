@@ -84,7 +84,7 @@ export async function POST(request: Request) {
   }
 
   // 2) Server-side enforced payment amount
-  const amount = feeAmountRupees ?? 999;
+  const amount = feeAmountRupees ?? 1;
 
   // Generate unique Cashfree order ID per attempt
   const cashfreeOrderId = `CF_TT_${Date.now()}_${Math.random()
