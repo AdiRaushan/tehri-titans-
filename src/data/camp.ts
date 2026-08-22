@@ -55,7 +55,7 @@ export const camp: Camp = {
       value: "Ayush Cricket Academy, Chidderwala, Kansrao, Uttarakhand 249204",
     },
     { label: "Eligibility", value: "16 years & above" },
-    { label: "Fee", value: "₹999" },
+    { label: "Fee", value: "₹1" },
   ],
   inclusions: [
     "Skills assessment — batting, bowling & fielding",
@@ -64,10 +64,10 @@ export const camp: Camp = {
   ],
 };
 
-// Trials registration fee
-export const feeAmountPaise = 99900; // ₹999 (in paise)
-export const feeAmountRupees = 999; // ₹999 (in Rupees)
-export const feeLabel = "₹999";
+// Trials registration fee (Set to ₹1 for testing)
+export const feeAmountPaise = 100; // ₹1 (in paise)
+export const feeAmountRupees = 1; // ₹1 (in Rupees)
+export const feeLabel = "₹1";
 
 // Cricketing role options offered in the registration form.
 export const proficiencyOptions = [
