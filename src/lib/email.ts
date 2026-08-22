@@ -34,6 +34,9 @@ export async function sendRegistrationConfirmationEmail({
     return { success: false, error: "Invalid recipient email" };
   }
 
+  const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || "https://tehrititans.in").replace(/\/$/, "");
+  const logoUrl = `${baseUrl}/tehri-titans-logo.png`;
+
   // Default from address (uses official verified domain tehrititans.in)
   const fromEmail =
     process.env.RESEND_FROM_EMAIL || "Tehri Titans Trials <trials@tehrititans.in>";
@@ -54,23 +57,24 @@ export async function sendRegistrationConfirmationEmail({
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tehri Titans Trials Confirmation</title>
 </head>
-<body style="margin:0; padding:0; background-color:#0f172a; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#334155;">
-  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#0f172a; padding: 30px 10px;">
+<body style="margin:0; padding:0; background-color:#070b14; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#334155;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#070b14; padding: 32px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:600px; background-color:#ffffff; border-radius:24px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.3);">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:600px; background-color:#ffffff; border-radius:24px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
           
-          <!-- BRAND HEADER -->
+          <!-- POLISHED BRAND HEADER WITH OFFICIAL LOGO -->
           <tr>
-            <td style="background-color:#090d16; padding: 32px 30px; text-align: center; border-bottom: 3px solid #38bdf8;">
+            <td style="background-color:#070b14; padding: 36px 30px 28px 30px; text-align: center; border-bottom: 3px solid #38bdf8;">
+              <img src="${logoUrl}" width="80" height="80" alt="Tehri Titans Logo" style="display:inline-block; margin-bottom:12px; border-radius:12px; box-shadow:0 4px 14px rgba(56,189,248,0.25);" />
               <div style="color:#38bdf8; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:3px; margin-bottom:6px;">
-                Official Player Trials Pass
+                OFFICIAL PLAYER TRIALS PASS
               </div>
-              <h1 style="color:#ffffff; font-size:26px; font-weight:900; text-transform:uppercase; tracking:1px; margin:0; letter-spacing:1px;">
+              <h1 style="color:#ffffff; font-size:28px; font-weight:900; text-transform:uppercase; letter-spacing:2px; margin:0;">
                 TEHRI TITANS
               </h1>
-              <div style="color:#cbd5e1; font-size:13px; font-weight:600; margin-top:4px;">
-                Cricket Trials &amp; Talent Scouting 2026
+              <div style="color:#94a3b8; font-size:13px; font-weight:600; margin-top:6px; letter-spacing:0.5px;">
+                Uttarakhand Premier League (UPL) | Talent Scouting 2026
               </div>
             </td>
           </tr>
@@ -78,7 +82,7 @@ export async function sendRegistrationConfirmationEmail({
           <!-- CONFIRMATION BANNER -->
           <tr>
             <td style="background-color:#ecfdf5; padding: 18px 30px; text-align: center; border-bottom: 1px solid #a7f3d0;">
-              <span style="display:inline-block; background-color:#059669; color:#ffffff; font-size:12px; font-weight:800; text-transform:uppercase; padding:6px 16px; border-radius:50px; letter-spacing:1px;">
+              <span style="display:inline-block; background-color:#059669; color:#ffffff; font-size:12px; font-weight:800; text-transform:uppercase; padding:7px 18px; border-radius:50px; letter-spacing:1px;">
                 ✓ REGISTRATION &amp; PAYMENT CONFIRMED
               </span>
             </td>
@@ -95,46 +99,46 @@ export async function sendRegistrationConfirmationEmail({
               </p>
 
               <!-- OFFICIAL TICKET CARD -->
-              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#f8fafc; border: 2px stroke #e2e8f0; border-radius:16px; margin-bottom:28px; border-left:6px solid #090d16;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#f8fafc; border: 1px solid #e2e8f0; border-radius:16px; margin-bottom:28px; border-left:6px solid #070b14;">
                 <tr>
                   <td style="padding: 20px 24px;">
-                    <div style="font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">
+                    <div style="font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">
                       Official Player Pass Details
                     </div>
                     <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td style="padding: 4px 0; font-size:13px; color:#64748b;">Registration ID:</td>
-                        <td style="padding: 4px 0; font-size:15px; font-weight:800; color:#0f172a; font-family:monospace; text-align:right;">
+                        <td style="padding: 5px 0; font-size:13px; color:#64748b;">Registration ID:</td>
+                        <td style="padding: 5px 0; font-size:15px; font-weight:800; color:#0f172a; font-family:monospace; text-align:right;">
                           ${escapeHtml(registration.registrationId)}
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 4px 0; font-size:13px; color:#64748b;">Player Name:</td>
-                        <td style="padding: 4px 0; font-size:14px; font-weight:700; color:#0f172a; text-align:right;">
+                        <td style="padding: 5px 0; font-size:13px; color:#64748b;">Player Name:</td>
+                        <td style="padding: 5px 0; font-size:14px; font-weight:700; color:#0f172a; text-align:right;">
                           ${escapeHtml(registration.name)}
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 4px 0; font-size:13px; color:#64748b;">Cricketing Role:</td>
-                        <td style="padding: 4px 0; font-size:14px; font-weight:700; color:#0284c7; text-align:right;">
+                        <td style="padding: 5px 0; font-size:13px; color:#64748b;">Cricketing Role:</td>
+                        <td style="padding: 5px 0; font-size:14px; font-weight:700; color:#0284c7; text-align:right;">
                           ${escapeHtml(registration.proficiency)}
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 4px 0; font-size:13px; color:#64748b;">Age &amp; Mobile:</td>
-                        <td style="padding: 4px 0; font-size:13px; font-weight:600; color:#334155; text-align:right;">
+                        <td style="padding: 5px 0; font-size:13px; color:#64748b;">Age &amp; Mobile:</td>
+                        <td style="padding: 5px 0; font-size:13px; font-weight:600; color:#334155; text-align:right;">
                           Age: ${escapeHtml(registration.age)} | ${escapeHtml(registration.mobile)}
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 4px 0; font-size:13px; color:#64748b;">Payment Status:</td>
-                        <td style="padding: 4px 0; font-size:13px; font-weight:800; color:#059669; text-align:right;">
+                        <td style="padding: 5px 0; font-size:13px; color:#64748b;">Payment Status:</td>
+                        <td style="padding: 5px 0; font-size:13px; font-weight:800; color:#059669; text-align:right;">
                           PAID (₹${amount})
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 4px 0; font-size:12px; color:#94a3b8;">Payment Reference:</td>
-                        <td style="padding: 4px 0; font-size:11px; color:#64748b; font-family:monospace; text-align:right;">
+                        <td style="padding: 5px 0; font-size:12px; color:#94a3b8;">Payment Reference:</td>
+                        <td style="padding: 5px 0; font-size:11px; color:#64748b; font-family:monospace; text-align:right;">
                           ${escapeHtml(payId)}
                         </td>
                       </tr>
@@ -144,38 +148,59 @@ export async function sendRegistrationConfirmationEmail({
               </table>
 
               <!-- EVENT LOCATION & TIMINGS -->
-              <div style="background-color:#0f172a; color:#ffffff; padding:20px 24px; border-radius:16px; margin-bottom:28px;">
+              <div style="background-color:#070b14; color:#ffffff; padding:22px 24px; border-radius:16px; margin-bottom:28px;">
                 <div style="font-size:11px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:10px;">
                   📍 TRIALS VENUE &amp; SCHEDULE
                 </div>
-                <div style="font-size:15px; font-weight:700; margin-bottom:6px; color:#ffffff;">
+                <div style="font-size:16px; font-weight:700; margin-bottom:6px; color:#ffffff;">
                   Ayush Cricket Academy
                 </div>
                 <div style="font-size:13px; color:#cbd5e1; line-height:1.5; margin-bottom:12px;">
                   Chidderwala, Kansrao, Uttarakhand 249204
                 </div>
-                <div style="border-top:1px solid #1e293b; pt:12px; margin-top:10px; font-size:13px; color:#e2e8f0; display:flex; justify-content:space-between;">
+                <div style="border-top:1px solid #1e293b; pt:12px; margin-top:12px; font-size:13px; color:#e2e8f0; display:flex; justify-content:space-between;">
                   <span><strong>Dates:</strong> 24 &amp; 25 August</span> | 
                   <span><strong>Reporting Time:</strong> 8:30 AM</span>
                 </div>
               </div>
 
-              <!-- PLAYER CHECKLIST -->
+              <!-- PLAYER CHECKLIST & INSTRUCTIONS -->
               <div style="margin-bottom:28px;">
-                <div style="font-size:13px; font-weight:800; color:#0f172a; text-transform:uppercase; tracking:1px; margin-bottom:12px;">
+                <div style="font-size:13px; font-weight:800; color:#0f172a; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">
                   Important Instructions for Players:
                 </div>
                 <ul style="margin:0; padding-left:20px; font-size:13px; color:#475569; line-height:1.7;">
                   <li>Present this confirmation email or your <strong>Registration ID (${escapeHtml(registration.registrationId)})</strong> at the venue entrance desk.</li>
-                  <li>Carry valid Government Photo ID proof (Aadhaar / Voter ID / School ID).</li>
                   <li>Bring your own personal cricket gear kit (Bat, Pads, Gloves, Helmet).</li>
                   <li>Wear white cricket apparel/whites during the trial sessions.</li>
+                  <li>Carry valid Government Photo ID proof (Aadhaar / Voter ID / School ID).</li>
                 </ul>
               </div>
 
-              <p style="font-size:13px; color:#64748b; line-height:1.6; margin-bottom:0;">
-                If you have any questions or require assistance, feel free to reply directly to this email or reach out to our team at the venue.
-              </p>
+              <!-- OFFICIAL SUPPORT & QUERY CONTACT BOX -->
+              <div style="background-color:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:20px 24px;">
+                <div style="font-size:12px; font-weight:800; color:#0f172a; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">
+                  Need Assistance or Have Queries?
+                </div>
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="padding:6px 0; font-size:13px; color:#475569;">
+                      <strong>Player Support &amp; Verification:</strong>
+                    </td>
+                    <td style="padding:6px 0; font-size:13px; text-align:right;">
+                      <a href="mailto:info@tehrititans.in" style="color:#0284c7; font-weight:700; text-decoration:none;">info@tehrititans.in</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:6px 0; font-size:13px; color:#475569;">
+                      <strong>Marketing &amp; Sponsorships:</strong>
+                    </td>
+                    <td style="padding:6px 0; font-size:13px; text-align:right;">
+                      <a href="mailto:marketing@tehrititans.in" style="color:#0284c7; font-weight:700; text-decoration:none;">marketing@tehrititans.in</a>
+                    </td>
+                  </tr>
+                </table>
+              </div>
             </td>
           </tr>
 
@@ -186,7 +211,10 @@ export async function sendRegistrationConfirmationEmail({
                 Tehri Titans Franchise
               </p>
               <p style="font-size:11px; color:#64748b; margin:0;">
-                 Uttarakhand Premier League (UPL) | Official Player Trials
+                Uttarakhand Premier League (UPL) | Official Player Trials
+              </p>
+              <p style="font-size:11px; color:#94a3b8; margin-top:8px;">
+                Contact: <a href="mailto:info@tehrititans.in" style="color:#64748b; text-decoration:none;">info@tehrititans.in</a> | <a href="mailto:marketing@tehrititans.in" style="color:#64748b; text-decoration:none;">marketing@tehrititans.in</a>
               </p>
             </td>
           </tr>
