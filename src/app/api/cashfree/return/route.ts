@@ -28,11 +28,11 @@ export async function GET(request: Request) {
 
   // Send confirmation email asynchronously if registration is PAID
   if (reg && reg.status === "PAID") {
-    sendRegistrationConfirmationEmail({
+    await sendRegistrationConfirmationEmail({
       registration: reg,
       cashfreePaymentId: cfOrder?.cf_order_id,
-      amount: cfOrder?.order_amount || 999,
-    }).catch((err) => console.error("Email send error on return URL:", err));
+      amount: cfOrder?.order_amount || 1,
+    });
   }
 
   const redirectUrl = new URL("/#trials", request.url);

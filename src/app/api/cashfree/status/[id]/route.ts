@@ -28,8 +28,14 @@ export async function GET(
     return NextResponse.json({ error: "Registration record not found." }, { status: 404 });
   }
 
-  // 2) If status is still PENDING, do a live check against Cashfree API for all attempts
-  if (registration.status === "PENDING") {
+  // 2) Check if registration is PAID or check live Cashfree API
+  if (registration.status === "PAID") {
+    await sendRegistrationConfirmationEmail({
+      registration,
+      cashfreePaymentId: registration.paymentAttempts.find((a) => a.status === "SUCCESS")?.cashfreePaymentId,
+      amount: 1,
+    });
+  } else if (registration.status === "PENDING") {
     for (const attempt of registration.paymentAttempts) {
       if (attempt.cashfreeOrderId) {
         const liveOrder = await fetchCashfreeOrder(attempt.cashfreeOrderId);
@@ -40,11 +46,11 @@ export async function GET(
           );
           if (updated) {
             registration = updated;
-            sendRegistrationConfirmationEmail({
+            await sendRegistrationConfirmationEmail({
               registration,
               cashfreePaymentId: liveOrder?.cf_order_id,
-              amount: liveOrder?.order_amount || 999,
-            }).catch((err) => console.error("Email send error on status check:", err));
+              amount: liveOrder?.order_amount || 1,
+            });
             break;
           }
         }

@@ -71,11 +71,11 @@ export async function POST(request: Request) {
   });
 
   if (newStatus === "PAID" && updated) {
-    sendRegistrationConfirmationEmail({
+    await sendRegistrationConfirmationEmail({
       registration: updated,
       cashfreePaymentId: paymentId,
-      amount: Number(order.order_amount) || 999,
-    }).catch((err) => console.error("Email send error on webhook:", err));
+      amount: Number(order.order_amount) || 1,
+    });
   }
 
   return NextResponse.json({ status: "OK", orderId, registrationId: existing.registrationId });
