@@ -18,50 +18,62 @@ async function isAuthorized(): Promise<boolean> {
 }
 
 export async function GET() {
-  if (!(await isAuthorized())) {
-    return NextResponse.json({ error: "Unauthorized access." }, { status: 401 });
-  }
-
-  // Auto-cleanup expired registrations before returning stats
-  await cleanupExpiredRegistrations();
-
-  const records = await readRegistrations();
-
-  // Compute stats with exact revenue accounting
-  let total = records.length;
-  let paid = 0;
-  let offline = 0;
-  let pending = 0;
-  let expired = 0;
-  let totalRevenue = 0;
-
-  for (const r of records) {
-    if (r.status === "PAID") {
-      paid++;
-      const successfulAttempt = r.paymentAttempts?.find((a) => a.status === "SUCCESS");
-      const paidAmount = Number(successfulAttempt?.amount) || feeAmountRupees || 999;
-      totalRevenue += paidAmount;
-    } else if (r.status === "OFFLINE") {
-      offline++;
-    } else if (r.status === "PENDING") {
-      pending++;
-    } else if (r.status === "EXPIRED") {
-      expired++;
+  try {
+    if (!(await isAuthorized())) {
+      return NextResponse.json({ error: "Unauthorized access." }, { status: 401 });
     }
-  }
 
-  return NextResponse.json({
-    ok: true,
-    stats: {
-      total,
-      paid,
-      offline,
-      pending,
-      expired,
-      totalRevenue,
-    },
-    records,
-  });
+    // Safely auto-cleanup expired registrations without crashing on API warnings
+    try {
+      await cleanupExpiredRegistrations();
+    } catch (err) {
+      console.warn("Non-critical cleanup warning:", err);
+    }
+
+    const records = await readRegistrations();
+
+    // Compute stats with exact revenue accounting
+    let total = records.length;
+    let paid = 0;
+    let offline = 0;
+    let pending = 0;
+    let expired = 0;
+    let totalRevenue = 0;
+
+    for (const r of records) {
+      if (r.status === "PAID") {
+        paid++;
+        const successfulAttempt = r.paymentAttempts?.find((a) => a.status === "SUCCESS");
+        const paidAmount = Number(successfulAttempt?.amount) || feeAmountRupees || 999;
+        totalRevenue += paidAmount;
+      } else if (r.status === "OFFLINE") {
+        offline++;
+      } else if (r.status === "PENDING") {
+        pending++;
+      } else if (r.status === "EXPIRED") {
+        expired++;
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      stats: {
+        total,
+        paid,
+        offline,
+        pending,
+        expired,
+        totalRevenue,
+      },
+      records,
+    });
+  } catch (err) {
+    console.error("Admin GET registrations error:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch registrations data." },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(request: Request) {

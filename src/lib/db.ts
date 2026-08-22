@@ -146,7 +146,7 @@ export async function readRegistrations(): Promise<RegistrationRecord[]> {
   if (supabase) {
     try {
       const { data, error } = await supabase.from("registrations").select("*");
-      if (!error && Array.isArray(data) && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         const supabaseRecords = data.map((row) =>
           migrateRecord({
             id: row.id,
