@@ -34,9 +34,9 @@ export async function sendRegistrationConfirmationEmail({
     return { success: false, error: "Invalid recipient email" };
   }
 
-  // Default from address (uses official custom domain if set, fallback to Resend default)
+  // Default from address (uses custom verified domain if set)
   const fromEmail =
-    process.env.RESEND_FROM_EMAIL || "Tehri Titans Trials <onboarding@resend.dev>";
+    process.env.RESEND_FROM_EMAIL || "Tehri Titans Trials <trials@tehrititans.in>";
 
   const latestAttempt =
     registration.paymentAttempts[registration.paymentAttempts.length - 1];
@@ -200,16 +200,21 @@ export async function sendRegistrationConfirmationEmail({
   `;
 
   try {
-    const data = await resend.emails.send({
+    const response = await resend.emails.send({
       from: fromEmail,
       to: [recipientEmail],
       subject: `Tehri Titans Trials Confirmation - Reg ID: ${registration.registrationId}`,
       html: emailHtml,
     });
 
+    if (response.error) {
+      console.error(`Resend API error sending email to ${recipientEmail}:`, response.error);
+      return { success: false, error: response.error.message };
+    }
+
     sentEmailsSet.add(emailKey);
-    console.log(`Successfully sent confirmation email to ${recipientEmail} (ID: ${data.data?.id})`);
-    return { success: true, id: data.data?.id };
+    console.log(`Successfully sent confirmation email to ${recipientEmail} (ID: ${response.data?.id})`);
+    return { success: true, id: response.data?.id };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : "Failed to send email";
     console.error(`Error sending email to ${recipientEmail}:`, errorMsg);
