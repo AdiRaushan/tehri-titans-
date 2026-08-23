@@ -419,8 +419,8 @@ export function Camp() {
 
   return (
     <section
-      id="trials"
-      className="relative scroll-mt-20 pt-20 pb-8 sm:pt-28 sm:pb-12 bg-white text-navy-950 overflow-hidden border-y border-navy-700/5"
+      id="trials-section"
+      className="relative pt-20 pb-8 sm:pt-28 sm:pb-12 bg-white text-navy-950 overflow-hidden border-y border-navy-700/5"
     >
       {/* Side margin mountain outlines */}
       <SideMountains align="left" className="top-10 bottom-10" />
@@ -487,7 +487,7 @@ export function Camp() {
           </div>
 
           {/* Registration form & Cashfree checkout container */}
-          <div className="lg:col-span-3">
+          <div id="trials" className="lg:col-span-3 scroll-mt-24 sm:scroll-mt-28 lg:scroll-mt-32">
             <GlassCard className="p-6 sm:p-8 border border-ice-500/30 shadow-glow-cyan-sm rounded-2xl" theme="dark">
               {status === "success" && successData ? (
                 <motion.div
