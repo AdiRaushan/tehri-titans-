@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Search,
   Download,
@@ -21,6 +21,9 @@ import {
   MapPin,
   Calendar,
   CreditCard,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { type RegistrationRecord } from "@/lib/db";
 
@@ -33,12 +36,21 @@ interface Stats {
   totalRevenue: number;
 }
 
+export type SortOption =
+  | "date_desc"
+  | "date_asc"
+  | "id_desc"
+  | "id_asc"
+  | "name_asc"
+  | "name_desc";
+
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
   const [clearingAll, setClearingAll] = useState(false);
 
   const [records, setRecords] = useState<RegistrationRecord[]>([]);
@@ -53,13 +65,38 @@ export default function AdminPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [sortBy, setSortBy] = useState<SortOption>("date_desc");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, sortBy]);
+
+  async function handleMarkPaid(registrationId: string, name: string) {
+    if (!window.confirm(`Confirm offline venue payment of ₹999 collected for ${name} (${registrationId})?`)) {
+      return;
+    }
+    setMarkingPaidId(registrationId);
+    try {
+      const res = await fetch("/api/admin/registrations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: registrationId, action: "mark_paid" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to mark registration as paid.");
+      } else {
+        fetchRegistrations();
+      }
+    } catch {
+      alert("Failed to update status. Please try again.");
+    } finally {
+      setMarkingPaidId(null);
+    }
+  }
 
   async function handleDelete(id: string, name: string) {
     if (
@@ -180,21 +217,63 @@ export default function AdminPage() {
     }
   }
 
-  const filteredRecords = records.filter((r) => {
-    const matchesSearch =
-      r.registrationId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.mobile.includes(searchTerm) ||
-      (r.paymentAttempts || []).some((a) =>
-        a.cashfreeOrderId?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  const sortedRecords = useMemo(() => {
+    return [...records].sort((a, b) => {
+      switch (sortBy) {
+        case "date_asc": {
+          const timeA = new Date(a.createdAt).getTime() || 0;
+          const timeB = new Date(b.createdAt).getTime() || 0;
+          if (timeA !== timeB) return timeA - timeB;
+          return a.registrationId.localeCompare(b.registrationId, undefined, { numeric: true });
+        }
+        case "id_desc":
+          return b.registrationId.localeCompare(a.registrationId, undefined, { numeric: true });
+        case "id_asc":
+          return a.registrationId.localeCompare(b.registrationId, undefined, { numeric: true });
+        case "name_asc":
+          return (a.name || "").localeCompare(b.name || "");
+        case "name_desc":
+          return (b.name || "").localeCompare(a.name || "");
+        case "date_desc":
+        default: {
+          const timeA = new Date(a.createdAt).getTime() || 0;
+          const timeB = new Date(b.createdAt).getTime() || 0;
+          if (timeB !== timeA) return timeB - timeA;
+          return b.registrationId.localeCompare(a.registrationId, undefined, { numeric: true });
+        }
+      }
+    });
+  }, [records, sortBy]);
 
-    const matchesStatus =
-      statusFilter === "ALL" || r.status.toUpperCase() === statusFilter;
+  const filteredRecords = useMemo(() => {
+    const searchClean = searchTerm.trim().toLowerCase();
+    const searchDigits = searchClean.replace(/\D/g, "");
 
-    return matchesSearch && matchesStatus;
-  });
+    return sortedRecords.filter((r) => {
+      const regIdClean = (r.registrationId || "").toLowerCase();
+      const regIdDigits = regIdClean.replace(/\D/g, "");
+
+      const matchesSearch =
+        !searchClean ||
+        regIdClean.includes(searchClean) ||
+        (searchDigits.length > 0 && regIdDigits.endsWith(searchDigits)) ||
+        (searchDigits.length > 0 && searchDigits === regIdDigits) ||
+        (r.name || "").toLowerCase().includes(searchClean) ||
+        (r.email || "").toLowerCase().includes(searchClean) ||
+        (r.mobile || "").includes(searchClean) ||
+        (r.proficiency || "").toLowerCase().includes(searchClean) ||
+        (r.address || "").toLowerCase().includes(searchClean) ||
+        (r.paymentAttempts || []).some((a) =>
+          (a.cashfreeOrderId || "").toLowerCase().includes(searchClean) ||
+          (a.cashfreePaymentId || "").toLowerCase().includes(searchClean)
+        );
+
+      const matchesStatus =
+        statusFilter === "ALL" || r.status.toUpperCase() === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [sortedRecords, searchTerm, statusFilter]);
 
   const totalFiltered = filteredRecords.length;
   const totalPages = Math.ceil(totalFiltered / pageSize) || 1;
@@ -403,20 +482,41 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Filter Controls */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search by ID, name, email, mobile..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-navy-950 placeholder:text-slate-400 focus:outline-none focus:border-navy-900 focus:ring-1 focus:ring-navy-900"
-            />
+        {/* Filter & Sort Controls */}
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search by ID, name, email, mobile..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-navy-950 placeholder:text-slate-400 focus:outline-none focus:border-navy-900 focus:ring-1 focus:ring-navy-900"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1">
+                <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                Sort:
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="w-full sm:w-auto bg-slate-50 border border-slate-300 px-3 py-2 text-xs font-bold text-navy-950 rounded-xl focus:outline-none focus:border-navy-900 shadow-sm cursor-pointer"
+              >
+                <option value="date_desc">Date: Newest First (Default)</option>
+                <option value="date_asc">Date: Oldest First</option>
+                <option value="id_desc">Reg ID: Highest First (TT-050 → TT-001)</option>
+                <option value="id_asc">Reg ID: Lowest First (TT-001 → TT-050)</option>
+                <option value="name_asc">Player Name: A → Z</option>
+                <option value="name_desc">Player Name: Z → A</option>
+              </select>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <div className="flex items-center gap-1.5 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
             <Filter className="h-3.5 w-3.5 text-slate-400 shrink-0 ml-1" />
             {["ALL", "PAID", "OFFLINE", "PENDING", "EXPIRED"].map((status) => (
               <button
@@ -513,7 +613,7 @@ export default function AdminPage() {
                   </div>
 
                   {/* Card Bottom Actions */}
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-100 flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={() =>
@@ -526,15 +626,29 @@ export default function AdminPage() {
                       {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(r.registrationId, r.name)}
-                      disabled={deletingId === r.registrationId}
-                      className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-lg text-[11px] font-bold hover:bg-rose-600 hover:text-white transition-all disabled:opacity-50"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      {deletingId === r.registrationId ? "Deleting..." : "Delete"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {r.status === "OFFLINE" && (
+                        <button
+                          type="button"
+                          onClick={() => handleMarkPaid(r.registrationId, r.name)}
+                          disabled={markingPaidId === r.registrationId}
+                          className="inline-flex items-center gap-1 bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[11px] font-bold hover:bg-emerald-700 transition-all disabled:opacity-50 shadow-sm"
+                        >
+                          <CheckCircle2 className="h-3 w-3" />
+                          {markingPaidId === r.registrationId ? "Updating..." : "Mark Paid"}
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(r.registrationId, r.name)}
+                        disabled={deletingId === r.registrationId}
+                        className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-lg text-[11px] font-bold hover:bg-rose-600 hover:text-white transition-all disabled:opacity-50"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        {deletingId === r.registrationId ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Expanded Payment Attempt Details */}
@@ -580,12 +694,57 @@ export default function AdminPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                  <th className="p-4">Reg ID</th>
+                  <th className="p-4">
+                    <button
+                      type="button"
+                      onClick={() => setSortBy(sortBy === "id_desc" ? "id_asc" : "id_desc")}
+                      className="flex items-center gap-1 hover:text-navy-950 font-bold uppercase tracking-wider"
+                    >
+                      Reg ID
+                      {sortBy === "id_desc" ? (
+                        <ArrowDown className="h-3 w-3 text-navy-950" />
+                      ) : sortBy === "id_asc" ? (
+                        <ArrowUp className="h-3 w-3 text-navy-950" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 text-slate-400" />
+                      )}
+                    </button>
+                  </th>
                   <th className="p-4">Status</th>
-                  <th className="p-4">Player Details</th>
+                  <th className="p-4">
+                    <button
+                      type="button"
+                      onClick={() => setSortBy(sortBy === "name_asc" ? "name_desc" : "name_asc")}
+                      className="flex items-center gap-1 hover:text-navy-950 font-bold uppercase tracking-wider"
+                    >
+                      Player Details
+                      {sortBy === "name_asc" ? (
+                        <ArrowUp className="h-3 w-3 text-navy-950" />
+                      ) : sortBy === "name_desc" ? (
+                        <ArrowDown className="h-3 w-3 text-navy-950" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 text-slate-400" />
+                      )}
+                    </button>
+                  </th>
                   <th className="p-4">Contact</th>
                   <th className="p-4">Role / Age</th>
-                  <th className="p-4">Created Date</th>
+                  <th className="p-4">
+                    <button
+                      type="button"
+                      onClick={() => setSortBy(sortBy === "date_desc" ? "date_asc" : "date_desc")}
+                      className="flex items-center gap-1 hover:text-navy-950 font-bold uppercase tracking-wider"
+                    >
+                      Created Date
+                      {sortBy === "date_desc" ? (
+                        <ArrowDown className="h-3 w-3 text-navy-950" />
+                      ) : sortBy === "date_asc" ? (
+                        <ArrowUp className="h-3 w-3 text-navy-950" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 text-slate-400" />
+                      )}
+                    </button>
+                  </th>
                   <th className="p-4 text-right">Action</th>
                 </tr>
               </thead>
@@ -600,6 +759,7 @@ export default function AdminPage() {
                   paginatedRecords.map((r) => {
                     const isExpanded = expandedId === r.registrationId;
                     const attempts = r.paymentAttempts || [];
+                    const latestAttempt = attempts[attempts.length - 1];
 
                     return (
                       <React.Fragment key={r.registrationId}>
@@ -619,6 +779,11 @@ export default function AdminPage() {
                                 <ChevronDown className="h-3 w-3 text-slate-400" />
                               )}
                             </button>
+                            {latestAttempt?.cashfreeOrderId && (
+                              <div className="text-[10px] text-slate-500 font-mono font-normal mt-0.5 truncate max-w-[120px]" title={latestAttempt.cashfreeOrderId}>
+                                ID: {latestAttempt.cashfreeOrderId}
+                              </div>
+                            )}
                           </td>
                           <td className="p-4">{renderBadge(r.status)}</td>
                           <td className="p-4 font-semibold text-navy-950">
@@ -649,7 +814,18 @@ export default function AdminPage() {
                                 })
                               : "-"}
                           </td>
-                          <td className="p-4 text-right">
+                          <td className="p-4 text-right whitespace-nowrap">
+                            {r.status === "OFFLINE" && (
+                              <button
+                                type="button"
+                                onClick={() => handleMarkPaid(r.registrationId, r.name)}
+                                disabled={markingPaidId === r.registrationId}
+                                className="inline-flex items-center gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700 transition-all px-3 py-1.5 rounded-xl text-[11px] font-extrabold uppercase disabled:opacity-50 shadow-sm mr-2"
+                              >
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                {markingPaidId === r.registrationId ? "Updating..." : "Mark Paid"}
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => handleDelete(r.registrationId, r.name)}

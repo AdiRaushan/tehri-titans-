@@ -145,7 +145,10 @@ export async function readRegistrations(): Promise<RegistrationRecord[]> {
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
-      const { data, error } = await supabase.from("registrations").select("*");
+      const { data, error } = await supabase
+        .from("registrations")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (!error && Array.isArray(data)) {
         const supabaseRecords = data.map((row) =>
           migrateRecord({
@@ -168,7 +171,14 @@ export async function readRegistrations(): Promise<RegistrationRecord[]> {
         const map = new Map<string, RegistrationRecord>();
         for (const r of fileRecords) map.set(r.registrationId, r);
         for (const r of supabaseRecords) map.set(r.registrationId, r);
-        memoryStore = Array.from(map.values());
+        const combined = Array.from(map.values());
+        combined.sort((a, b) => {
+          const timeA = new Date(a.createdAt).getTime() || 0;
+          const timeB = new Date(b.createdAt).getTime() || 0;
+          if (timeB !== timeA) return timeB - timeA;
+          return b.registrationId.localeCompare(a.registrationId, undefined, { numeric: true });
+        });
+        memoryStore = combined;
         return memoryStore;
       }
     } catch (err) {
@@ -176,6 +186,12 @@ export async function readRegistrations(): Promise<RegistrationRecord[]> {
     }
   }
 
+  fileRecords.sort((a, b) => {
+    const timeA = new Date(a.createdAt).getTime() || 0;
+    const timeB = new Date(b.createdAt).getTime() || 0;
+    if (timeB !== timeA) return timeB - timeA;
+    return b.registrationId.localeCompare(a.registrationId, undefined, { numeric: true });
+  });
   memoryStore = fileRecords;
   return memoryStore;
 }
@@ -678,3 +694,61 @@ export async function clearAllRegistrations(): Promise<void> {
   }
   await writeRegistrations([]);
 }
+
+/**
+ * Marks an offline registration as PAID (for venue cash/UPI collection)
+ */
+export async function markOfflineRegistrationPaid(queryStr: string): Promise<RegistrationRecord | null> {
+  const records = await readRegistrations();
+  const query = queryStr.trim().toUpperCase();
+  const queryDigits = query.replace(/\D/g, "");
+  const nowStr = new Date().toISOString();
+  let targetIndex = -1;
+
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i];
+    const regId = (r.registrationId || "").toUpperCase();
+    const id = (r.id || "").toUpperCase();
+    if (regId === query || id === query) {
+      targetIndex = i;
+      break;
+    }
+    if (queryDigits && regId.replace(/\D/g, "") === queryDigits && queryDigits.length > 0) {
+      targetIndex = i;
+      break;
+    }
+  }
+
+  if (targetIndex === -1) return null;
+
+  const reg = records[targetIndex];
+  const updatedAttempts: PaymentAttempt[] = (reg.paymentAttempts || []).map((att) => ({
+    ...att,
+    status: "SUCCESS" as PaymentAttemptStatus,
+    paymentMethod: att.paymentMethod || "Paid at Venue Desk",
+    updatedAt: nowStr,
+  }));
+
+  if (updatedAttempts.length === 0) {
+    updatedAttempts.push({
+      cashfreeOrderId: `OFFLINE-${reg.registrationId}`,
+      amount: 999,
+      status: "SUCCESS",
+      paymentMethod: "Paid at Venue Desk",
+      createdAt: nowStr,
+      updatedAt: nowStr,
+    });
+  }
+
+  const updatedReg: RegistrationRecord = {
+    ...reg,
+    status: "PAID",
+    paidAt: nowStr,
+    paymentAttempts: updatedAttempts,
+  };
+
+  records[targetIndex] = updatedReg;
+  await writeRegistrations(records);
+  return updatedReg;
+}
+

@@ -117,3 +117,40 @@ export async function DELETE(request: Request) {
     );
   }
 }
+
+export async function PATCH(request: Request) {
+  if (!(await isAuthorized())) {
+    return NextResponse.json({ error: "Unauthorized access." }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const id = body?.id || body?.registrationId;
+    const action = body?.action;
+
+    if (!id) {
+      return NextResponse.json({ error: "Registration ID is required." }, { status: 400 });
+    }
+
+    if (action === "mark_paid") {
+      const { markOfflineRegistrationPaid } = await import("@/lib/db");
+      const updated = await markOfflineRegistrationPaid(String(id));
+      if (!updated) {
+        return NextResponse.json({ error: "Registration record not found." }, { status: 404 });
+      }
+      return NextResponse.json({
+        ok: true,
+        message: `Registration ${id} marked as PAID.`,
+        registration: updated,
+      });
+    }
+
+    return NextResponse.json({ error: "Invalid action requested." }, { status: 400 });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to update registration status." },
+      { status: 500 }
+    );
+  }
+}
+

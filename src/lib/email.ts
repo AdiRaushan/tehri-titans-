@@ -43,11 +43,74 @@ export async function sendRegistrationConfirmationEmail({
 
   const latestAttempt =
     registration.paymentAttempts[registration.paymentAttempts.length - 1];
+  const isOffline = registration.status === "OFFLINE";
   const payId =
     cashfreePaymentId ||
     latestAttempt?.cashfreePaymentId ||
     latestAttempt?.cashfreeOrderId ||
-    "CONFIRMED";
+    (isOffline ? `OFFLINE-${registration.registrationId}` : "CONFIRMED");
+
+  const emailSubject = isOffline
+    ? `Tehri Titans Trials Pass (Pay at Center) - Reg ID: ${registration.registrationId}`
+    : `Tehri Titans Trials Confirmation - Reg ID: ${registration.registrationId}`;
+
+  const bannerHtml = isOffline
+    ? `
+      <tr>
+        <td style="background-color:#fffbe6; padding: 18px 30px; text-align: center; border-bottom: 1px solid #ffe58f;">
+          <span style="display:inline-block; background-color:#d97706; color:#ffffff; font-size:12px; font-weight:800; text-transform:uppercase; padding:7px 18px; border-radius:50px; letter-spacing:1px;">
+            ✓ REGISTRATION CONFIRMED · PAY AT TRIAL CENTER
+          </span>
+        </td>
+      </tr>
+    `
+    : `
+      <tr>
+        <td style="background-color:#ecfdf5; padding: 18px 30px; text-align: center; border-bottom: 1px solid #a7f3d0;">
+          <span style="display:inline-block; background-color:#059669; color:#ffffff; font-size:12px; font-weight:800; text-transform:uppercase; padding:7px 18px; border-radius:50px; letter-spacing:1px;">
+            ✓ REGISTRATION &amp; PAYMENT CONFIRMED
+          </span>
+        </td>
+      </tr>
+    `;
+
+  const bodyIntroText = isOffline
+    ? `Congratulations! Your registration for the official <strong>Tehri Titans Cricket Trials</strong> has been successfully received. Please pay the registration fee of <strong>₹${amount}</strong> in Cash or UPI at the trial center desk on trial day.`
+    : `Congratulations! Your registration for the official <strong>Tehri Titans Cricket Trials</strong> has been successfully received. Your payment of <strong>₹${amount}</strong> was confirmed via Cashfree Payments.`;
+
+  const paymentStatusRow = isOffline
+    ? `
+      <tr>
+        <td style="padding: 5px 0; font-size:13px; color:#64748b;">Payment Status:</td>
+        <td style="padding: 5px 0; font-size:13px; font-weight:800; color:#d97706; text-align:right;">
+          Pay at Trial Center (₹${amount} Due)
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 5px 0; font-size:12px; color:#94a3b8;">Payment Reference:</td>
+        <td style="padding: 5px 0; font-size:11px; color:#64748b; font-family:monospace; text-align:right;">
+          PAY AT CENTER DESK (${escapeHtml(payId)})
+        </td>
+      </tr>
+    `
+    : `
+      <tr>
+        <td style="padding: 5px 0; font-size:13px; color:#64748b;">Payment Status:</td>
+        <td style="padding: 5px 0; font-size:13px; font-weight:800; color:#059669; text-align:right;">
+          PAID (₹${amount})
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 5px 0; font-size:12px; color:#94a3b8;">Payment Reference:</td>
+        <td style="padding: 5px 0; font-size:11px; color:#64748b; font-family:monospace; text-align:right;">
+          ${escapeHtml(payId)}
+        </td>
+      </tr>
+    `;
+
+  const extraInstruction = isOffline
+    ? `<li>Present this pass at the trial center registration desk and pay <strong>₹${amount} (Cash or UPI)</strong> to collect your physical chest number.</li>`
+    : ``;
 
   const emailHtml = `
 <!DOCTYPE html>
@@ -79,13 +142,7 @@ export async function sendRegistrationConfirmationEmail({
           </tr>
 
           <!-- CONFIRMATION BANNER -->
-          <tr>
-            <td style="background-color:#ecfdf5; padding: 18px 30px; text-align: center; border-bottom: 1px solid #a7f3d0;">
-              <span style="display:inline-block; background-color:#059669; color:#ffffff; font-size:12px; font-weight:800; text-transform:uppercase; padding:7px 18px; border-radius:50px; letter-spacing:1px;">
-                ✓ REGISTRATION &amp; PAYMENT CONFIRMED
-              </span>
-            </td>
-          </tr>
+          ${bannerHtml}
 
           <!-- CONTENT BODY -->
           <tr>
@@ -94,7 +151,7 @@ export async function sendRegistrationConfirmationEmail({
                 Dear ${escapeHtml(registration.name)},
               </p>
               <p style="font-size:14px; line-height:1.6; color:#475569; margin-bottom:24px;">
-                Congratulations! Your registration for the official <strong>Tehri Titans Cricket Trials</strong> has been successfully received. Your payment of <strong>₹${amount}</strong> was confirmed via Cashfree Payments.
+                ${bodyIntroText}
               </p>
 
               <!-- OFFICIAL TICKET CARD -->
@@ -129,18 +186,7 @@ export async function sendRegistrationConfirmationEmail({
                           Age: ${escapeHtml(registration.age)} | ${escapeHtml(registration.mobile)}
                         </td>
                       </tr>
-                      <tr>
-                        <td style="padding: 5px 0; font-size:13px; color:#64748b;">Payment Status:</td>
-                        <td style="padding: 5px 0; font-size:13px; font-weight:800; color:#059669; text-align:right;">
-                          PAID (₹${amount})
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 5px 0; font-size:12px; color:#94a3b8;">Payment Reference:</td>
-                        <td style="padding: 5px 0; font-size:11px; color:#64748b; font-family:monospace; text-align:right;">
-                          ${escapeHtml(payId)}
-                        </td>
-                      </tr>
+                      ${paymentStatusRow}
                     </table>
                   </td>
                 </tr>
@@ -174,6 +220,7 @@ export async function sendRegistrationConfirmationEmail({
                 </div>
                 <ul style="margin:0; padding-left:20px; font-size:13px; color:#475569; line-height:1.7;">
                   <li>Present this confirmation email or your <strong>Registration ID (${escapeHtml(registration.registrationId)})</strong> at the venue entrance desk.</li>
+                  ${extraInstruction}
                   <li>Carry valid Government Photo ID proof (Aadhaar / Voter ID / School ID).</li>
                 </ul>
               </div>
@@ -232,7 +279,7 @@ export async function sendRegistrationConfirmationEmail({
     const response = await resend.emails.send({
       from: fromEmail,
       to: [recipientEmail],
-      subject: `Tehri Titans Trials Confirmation - Reg ID: ${registration.registrationId}`,
+      subject: emailSubject,
       html: emailHtml,
     });
 

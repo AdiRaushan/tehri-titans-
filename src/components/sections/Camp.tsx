@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { CalendarDays, MapPin, Wallet, UserCheck, Check, Printer, ShieldCheck, FileText, Mail, Sparkles } from "lucide-react";
+import { CalendarDays, MapPin, Wallet, UserCheck, Check, Printer, ShieldCheck, FileText, Mail, Sparkles, CreditCard, Building2 } from "lucide-react";
 import { GlassCard } from "@/components/GlassCard";
 import { SectionHeading } from "@/components/SectionHeading";
 import { Reveal } from "@/components/Reveal";
@@ -74,6 +74,8 @@ export interface RegistrationSuccessData {
   proficiency: string;
   amount: number;
   paidAt?: string;
+  paymentMode?: "ONLINE" | "OFFLINE";
+  status?: string;
 }
 
 type Status = "idle" | "submitting" | "success" | "error";
@@ -86,6 +88,7 @@ const labelClass =
 export function Camp() {
   const reduced = useReducedMotion();
   const [form, setForm] = useState(emptyForm);
+  const [paymentMode, setPaymentMode] = useState<"ONLINE" | "OFFLINE">("ONLINE");
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
   const [successData, setSuccessData] = useState<RegistrationSuccessData | null>(null);
@@ -179,6 +182,43 @@ export function Camp() {
       return fail("Please enter a valid email address (e.g. player@gmail.com).");
     }
 
+    if (paymentMode === "OFFLINE") {
+      try {
+        const regRes = await fetch("/api/register-offline", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
+
+        const regData = await regRes.json().catch(() => ({}));
+        if (!regRes.ok || !regData.ok) {
+          return fail(regData.error ?? "Could not process offline registration.");
+        }
+
+        const reg = regData.registration;
+        setSuccessData({
+          registrationId: reg.registrationId,
+          cashfreeOrderId: `OFFLINE-${reg.registrationId}`,
+          cashfreePaymentId: "PAY_AT_CENTER",
+          name: reg.name,
+          email: reg.email,
+          mobile: reg.mobile,
+          proficiency: reg.proficiency,
+          amount: 999,
+          paymentMode: "OFFLINE",
+          status: "OFFLINE",
+        });
+        setStatus("success");
+        setForm(emptyForm);
+        return;
+      } catch (err) {
+        setStatus("idle");
+        return fail(
+          err instanceof Error ? err.message : "An unexpected error occurred during registration."
+        );
+      }
+    }
+
     try {
       const orderRes = await fetch("/api/cashfree/create-order", {
         method: "POST",
@@ -226,11 +266,24 @@ export function Camp() {
   function handlePrintReceipt() {
     if (typeof window === "undefined" || !successData) return;
 
+    const isOfflinePass = successData.paymentMode === "OFFLINE" || successData.status === "OFFLINE";
+
     const printWin = window.open("", "_blank", "width=650,height=750");
     if (!printWin) {
       window.print();
       return;
     }
+
+    const statusTagText = isOfflinePass
+      ? "Status: PAY AT TRIAL CENTER DESK (₹999 Due)"
+      : "Status: PAID · Cashfree Verified";
+    const statusTagColor = isOfflinePass ? "#fbbf24" : "#34d399";
+    const feeText = isOfflinePass
+      ? `₹${successData.amount.toFixed(2)} (Pay at Center Desk)`
+      : `₹${successData.amount.toFixed(2)} (Paid)`;
+    const payModeText = isOfflinePass
+      ? "PAY AT TRIAL CENTER DESK"
+      : `CASHFREE (${successData.cashfreePaymentId || successData.cashfreeOrderId})`;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -285,7 +338,7 @@ export function Camp() {
               color: #ffffff;
             }
             .status-tag {
-              color: #34d399;
+              color: ${statusTagColor};
               font-size: 11px;
               font-weight: 800;
               letter-spacing: 0.1em;
@@ -337,7 +390,7 @@ export function Camp() {
               word-break: break-all;
             }
             .amount {
-              color: #34d399;
+              color: ${statusTagColor};
               font-size: 16px;
               font-weight: 800;
             }
@@ -358,7 +411,7 @@ export function Camp() {
             <div class="brand-header">
               <div class="eyebrow">Tehri Titans · UPL Franchise</div>
               <div class="title">Registration Confirmed</div>
-              <div class="status-tag">Status: PAID · Cashfree Verified</div>
+              <div class="status-tag">${statusTagText}</div>
             </div>
 
             <div class="id-row">
@@ -389,11 +442,11 @@ export function Camp() {
               </div>
               <div class="item">
                 <div class="label">Registration Fee</div>
-                <div class="val amount" style="color: #34d399;">₹${successData.amount.toFixed(2)} (Paid)</div>
+                <div class="val amount">${feeText}</div>
               </div>
               <div class="item">
                 <div class="label">Payment Mode / ID</div>
-                <div class="val" style="font-family: monospace; font-size: 11px; color: #38bdf8;">CASHFREE (${successData.cashfreePaymentId || successData.cashfreeOrderId})</div>
+                <div class="val" style="font-family: monospace; font-size: 11px; color: #38bdf8;">${payModeText}</div>
               </div>
             </div>
 
@@ -495,101 +548,112 @@ export function Camp() {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex flex-col gap-6 font-sans printable-receipt"
                 >
-                  <div className="flex flex-col items-center justify-center text-center pb-4 border-b border-navy-700/50">
-                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-ice-500 bg-ice-500/15 text-ice-400 shadow-glow-cyan">
-                      <ShieldCheck className="h-8 w-8" />
-                    </span>
-                    <h3 className="mt-4 text-2xl font-display uppercase tracking-wide text-white font-bold">
-                      Registration Successful!
-                    </h3>
-                    <p className="mt-1 text-xs text-ice-400 font-bold uppercase tracking-widest">
-                      Registration Pass Generated · Cashfree Payment Verified
-                    </p>
-                  </div>
+                  {(() => {
+                    const isOfflinePass = successData.paymentMode === "OFFLINE" || successData.status === "OFFLINE";
+                    return (
+                      <>
+                        <div className="flex flex-col items-center justify-center text-center pb-4 border-b border-navy-700/50">
+                          <span className="flex h-14 w-14 items-center justify-center rounded-full border border-ice-500 bg-ice-500/15 text-ice-400 shadow-glow-cyan">
+                            <ShieldCheck className="h-8 w-8" />
+                          </span>
+                          <h3 className="mt-4 text-2xl font-display uppercase tracking-wide text-white font-bold">
+                            Registration Successful!
+                          </h3>
+                          <p className="mt-1 text-xs text-ice-400 font-bold uppercase tracking-widest">
+                            {isOfflinePass
+                              ? "Registration Pass Generated · Pay at Trial Center Desk"
+                              : "Registration Pass Generated · Cashfree Payment Verified"}
+                          </p>
+                        </div>
 
-                  {/* Screenshot Proof Notice */}
-                  <div className="bg-navy-950 border border-ice-500/40 p-4 rounded-xl text-center space-y-1.5 shadow-sm">
-                    <p className="text-xs font-bold uppercase tracking-wider text-ice-400 flex items-center justify-center gap-1.5">
-                      📸 Important: Save Your Pass &amp; Reference Code
-                    </p>
-                    <p className="text-xs text-ice-200/80 leading-relaxed font-sans">
-                      Your payment of ₹{successData.amount} has been verified via Cashfree. Save your Reference Code <strong className="text-white font-mono">{successData.registrationId}</strong> and present this pass at the trial center on trial day.
-                    </p>
-                  </div>
+                        {/* Screenshot Proof Notice */}
+                        <div className="bg-navy-950 border border-ice-500/40 p-4 rounded-xl text-center space-y-1.5 shadow-sm">
+                          <p className="text-xs font-bold uppercase tracking-wider text-ice-400 flex items-center justify-center gap-1.5">
+                            📸 Important: Save Your Pass &amp; Reference Code
+                          </p>
+                          <p className="text-xs text-ice-200/80 leading-relaxed font-sans">
+                            {isOfflinePass
+                              ? <>Save your Reference Code <strong className="text-white font-mono">{successData.registrationId}</strong> and present this pass at the trial center desk on trial day to pay ₹{successData.amount} (Cash/UPI) and collect your chest number.</>
+                              : <>Your payment of ₹{successData.amount} has been verified via Cashfree. Save your Reference Code <strong className="text-white font-mono">{successData.registrationId}</strong> and present this pass at the trial center on trial day.</>}
+                          </p>
+                        </div>
 
-                  {/* Printable Receipt Card Details */}
-                  <div className="bg-navy-950 border border-navy-700 p-6 rounded-xl space-y-4">
-                    <div className="flex justify-between items-center border-b border-navy-800 pb-3">
-                      <div>
-                        <span className="text-xs font-bold uppercase tracking-wider text-ice-500 block">
-                          Registration Reference Code
-                        </span>
-                        <span className="text-[11px] text-ice-200/60 font-sans">Show at trial center</span>
-                      </div>
-                      <span className="text-xl font-mono font-extrabold text-white tracking-widest bg-navy-900 border border-ice-500/40 px-3.5 py-1 rounded-lg">
-                        {successData.registrationId}
-                      </span>
-                    </div>
+                        {/* Printable Receipt Card Details */}
+                        <div className="bg-navy-950 border border-navy-700 p-6 rounded-xl space-y-4">
+                          <div className="flex justify-between items-center border-b border-navy-800 pb-3">
+                            <div>
+                              <span className="text-xs font-bold uppercase tracking-wider text-ice-500 block">
+                                Registration Reference Code
+                              </span>
+                              <span className="text-[11px] text-ice-200/60 font-sans">Show at trial center</span>
+                            </div>
+                            <span className="text-xl font-mono font-extrabold text-white tracking-widest bg-navy-900 border border-ice-500/40 px-3.5 py-1 rounded-lg">
+                              {successData.registrationId}
+                            </span>
+                          </div>
 
-                    <div className="grid grid-cols-2 gap-4 text-xs">
-                      <div>
-                        <span className="text-navy-400 uppercase font-bold text-[10px]">
-                          Player Name
-                        </span>
-                        <p className="font-semibold text-white mt-0.5">
-                          {successData.name}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-navy-400 uppercase font-bold text-[10px]">
-                          Mobile
-                        </span>
-                        <p className="font-semibold text-white mt-0.5">
-                          {successData.mobile}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-navy-400 uppercase font-bold text-[10px]">
-                          Email
-                        </span>
-                        <p className="font-semibold text-white mt-0.5 truncate">
-                          {successData.email}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-navy-400 uppercase font-bold text-[10px]">
-                          Cricket Role
-                        </span>
-                        <p className="font-semibold text-white mt-0.5">
-                          {successData.proficiency}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-navy-400 uppercase font-bold text-[10px]">
-                          Trial Dates
-                        </span>
-                        <p className="font-semibold text-ice-400 mt-0.5">
-                          26 &amp; 27 August
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-navy-400 uppercase font-bold text-[10px]">
-                          Trial Fee
-                        </span>
-                        <p className="font-bold text-emerald-400 mt-0.5">
-                          ₹{successData.amount.toFixed(2)} (Paid)
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-navy-400 uppercase font-bold text-[10px]">
-                          Payment Status
-                        </span>
-                        <p className="font-mono text-[11px] text-emerald-400 font-bold mt-0.5">
-                          PAID (Cashfree Verified)
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                          <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div>
+                              <span className="text-navy-400 uppercase font-bold text-[10px]">
+                                Player Name
+                              </span>
+                              <p className="font-semibold text-white mt-0.5">
+                                {successData.name}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-navy-400 uppercase font-bold text-[10px]">
+                                Mobile
+                              </span>
+                              <p className="font-semibold text-white mt-0.5">
+                                {successData.mobile}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-navy-400 uppercase font-bold text-[10px]">
+                                Email
+                              </span>
+                              <p className="font-semibold text-white mt-0.5 truncate">
+                                {successData.email}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-navy-400 uppercase font-bold text-[10px]">
+                                Cricket Role
+                              </span>
+                              <p className="font-semibold text-white mt-0.5">
+                                {successData.proficiency}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-navy-400 uppercase font-bold text-[10px]">
+                                Trial Dates
+                              </span>
+                              <p className="font-semibold text-ice-400 mt-0.5">
+                                26 &amp; 27 August
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-navy-400 uppercase font-bold text-[10px]">
+                                Trial Fee
+                              </span>
+                              <p className={clsx("font-bold mt-0.5", isOfflinePass ? "text-amber-400" : "text-emerald-400")}>
+                                {isOfflinePass ? `₹${successData.amount.toFixed(2)} (Pay at Center Desk)` : `₹${successData.amount.toFixed(2)} (Paid)`}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-navy-400 uppercase font-bold text-[10px]">
+                                Payment Status
+                              </span>
+                              <p className={clsx("font-mono text-[11px] font-bold mt-0.5", isOfflinePass ? "text-amber-400" : "text-emerald-400")}>
+                                {isOfflinePass ? "PAY AT TRIAL CENTER (Pending)" : "PAID (Cashfree Verified)"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
 
                   <div className="flex flex-col sm:flex-row gap-3 pt-2 no-print">
                     <button
@@ -718,6 +782,61 @@ export function Camp() {
                         placeholder="Your full residential address"
                       />
                     </div>
+
+                    <div className="sm:col-span-2 mt-1">
+                      <label className={labelClass}>
+                        Select Payment Option *
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1.5 font-sans">
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMode("ONLINE")}
+                          className={clsx(
+                            "flex flex-col items-start p-4 rounded-xl border-2 transition-all duration-200 text-left cursor-pointer",
+                            paymentMode === "ONLINE"
+                              ? "border-ice-400 bg-ice-500/15 text-white shadow-glow-cyan-sm"
+                              : "border-ice-500/20 bg-navy-950/60 text-ice-200/60 hover:border-ice-500/40"
+                          )}
+                        >
+                          <div className="flex items-center justify-between w-full mb-1">
+                            <span className="text-xs font-extrabold uppercase tracking-wider text-ice-400 flex items-center gap-1.5">
+                              <CreditCard className="h-4 w-4 text-ice-400" />
+                              Pay Online Now
+                            </span>
+                            {paymentMode === "ONLINE" && (
+                              <span className="h-4 w-4 rounded-full bg-ice-400 text-navy-950 flex items-center justify-center text-[10px] font-bold">✓</span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-300 font-medium leading-normal">
+                            Instant online pass via UPI, Debit/Credit Card, or Netbanking (₹999).
+                          </p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMode("OFFLINE")}
+                          className={clsx(
+                            "flex flex-col items-start p-4 rounded-xl border-2 transition-all duration-200 text-left cursor-pointer",
+                            paymentMode === "OFFLINE"
+                              ? "border-amber-400 bg-amber-500/15 text-white shadow-md"
+                              : "border-ice-500/20 bg-navy-950/60 text-ice-200/60 hover:border-ice-500/40"
+                          )}
+                        >
+                          <div className="flex items-center justify-between w-full mb-1">
+                            <span className="text-xs font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                              <Building2 className="h-4 w-4 text-amber-400" />
+                              Pay at Trial Center
+                            </span>
+                            {paymentMode === "OFFLINE" && (
+                              <span className="h-4 w-4 rounded-full bg-amber-400 text-navy-950 flex items-center justify-center text-[10px] font-bold">✓</span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-300 font-medium leading-normal">
+                            Register online &amp; pay ₹999 at the trial venue desk on trial day.
+                          </p>
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   {status === "error" && (
@@ -731,17 +850,25 @@ export function Camp() {
                     disabled={status === "submitting"}
                     className={clsx(
                       "inline-flex items-center justify-center gap-2 px-7 py-3.5 text-xs font-bold uppercase tracking-widest transition-all duration-200 skew-x-[-12deg] focus-visible:ring-2 focus-visible:ring-ice-500 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-900 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60",
-                      "bg-ice-500 text-navy-950 hover:bg-ice-400 shadow-glow-cyan-sm hover:shadow-glow-cyan"
+                      paymentMode === "OFFLINE"
+                        ? "bg-amber-400 text-navy-950 hover:bg-amber-300 shadow-md"
+                        : "bg-ice-500 text-navy-950 hover:bg-ice-400 shadow-glow-cyan-sm hover:shadow-glow-cyan"
                     )}
                   >
                     <span className="skew-x-[12deg] inline-flex items-center gap-2">
                       {status === "submitting"
-                        ? "Initiating Cashfree Payment..."
-                        : `Proceed to Pay ₹${feeAmountRupees}`}
+                        ? paymentMode === "OFFLINE"
+                          ? "Generating Trial Pass..."
+                          : "Initiating Cashfree Payment..."
+                        : paymentMode === "OFFLINE"
+                          ? `Register & Pay ₹${feeAmountRupees} at Trial Center`
+                          : `Proceed to Pay ₹${feeAmountRupees}`}
                     </span>
                   </button>
                   <p className="text-xs text-ice-200/70 font-sans leading-relaxed">
-                    * Official registration fee of ₹{feeAmountRupees} processed securely via Cashfree Payments Gateway (UPI, Credit/Debit Cards, Netbanking, Wallets).
+                    {paymentMode === "OFFLINE"
+                      ? "* Registration will generate an official trial pass. Fee of ₹999 is payable at the venue desk."
+                      : `* Official registration fee of ₹${feeAmountRupees} processed securely via Cashfree Payments Gateway (UPI, Credit/Debit Cards, Netbanking, Wallets).`}
                   </p>
                 </form>
               )}

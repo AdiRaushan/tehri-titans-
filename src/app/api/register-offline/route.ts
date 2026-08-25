@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createOfflineRegistration } from "@/lib/db";
+import { sendRegistrationConfirmationEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,6 +70,14 @@ export async function POST(request: Request) {
       age: String(body.age),
       proficiency: String(body.proficiency),
       address: String(body.address),
+    });
+
+    // Send email confirmation asynchronously
+    sendRegistrationConfirmationEmail({
+      registration,
+      amount: 999,
+    }).catch((err) => {
+      console.error("Failed to send offline registration email:", err);
     });
 
     return NextResponse.json(
